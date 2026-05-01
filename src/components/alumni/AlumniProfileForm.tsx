@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import AlumniAlert from "@/components/ui/AlumniAlert";
 
 type ExperienceItem = {
   id?: string;
@@ -21,12 +22,12 @@ type AlumniProfileFormProps = {
     full_name: string;
     nickname: string;
     email: string;
-    phone: string;
     avatar_url: string;
     gender: string;
     study_status: string;
     intake_year: string;
     graduation_year: string;
+    degree_level: string;
     program: string;
     institution: string;
     city: string;
@@ -37,10 +38,6 @@ type AlumniProfileFormProps = {
     linkedin_url: string;
     instagram_url: string;
     website_url: string;
-    is_public: boolean;
-    show_email: boolean;
-    show_phone: boolean;
-    show_city: boolean;
   };
   experiences: ExperienceItem[];
 };
@@ -72,7 +69,7 @@ function Input({
       <p className="mb-2 text-xs text-white/70">{label}</p>
       <input
         type={type}
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none backdrop-blur-xl"
@@ -96,7 +93,7 @@ function Textarea({
     <label className="block">
       <p className="mb-2 text-xs text-white/70">{label}</p>
       <textarea
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="min-h-[110px] w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none backdrop-blur-xl"
@@ -120,7 +117,7 @@ function Select({
     <label className="block">
       <p className="mb-2 text-xs text-white/70">{label}</p>
       <select
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none backdrop-blur-xl"
       >
@@ -137,31 +134,15 @@ function Select({
   );
 }
 
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <span className="text-sm text-white/80">{label}</span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4"
-      />
-    </label>
-  );
-}
-
 const EXPERIENCE_TYPE_OPTIONS = [
   { label: "Pekerjaan", value: "WORK" },
   { label: "Prestasi", value: "ACHIEVEMENT" },
+];
+
+const DEGREE_LEVEL_OPTIONS = [
+  { label: "S1", value: "S1" },
+  { label: "S2", value: "S2" },
+  { label: "S3", value: "S3" },
 ];
 
 export default function AlumniProfileForm({
@@ -170,6 +151,8 @@ export default function AlumniProfileForm({
   experiences: initialExperiences,
 }: AlumniProfileFormProps) {
   const supabase = useMemo(() => createClient(), []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [profile, setProfile] = useState(initialProfile);
   const [experiences, setExperiences] = useState<ExperienceItem[]>(
     initialExperiences.length > 0
@@ -187,12 +170,26 @@ export default function AlumniProfileForm({
           },
         ]
   );
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>(profile.avatar_url);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+
+  // Alert State
+  const [alert, setAlert] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
 
   const completion = useMemo(() => {
     const checklist = [
-      Boolean(profile.avatar_url),
+      Boolean(profile.avatar_url || avatarFile),
       Boolean(profile.full_name),
       Boolean(profile.short_bio),
       Boolean(profile.current_position || profile.current_company),
@@ -201,7 +198,15 @@ export default function AlumniProfileForm({
     ];
     const done = checklist.filter(Boolean).length;
     return Math.round((done / checklist.length) * 100);
-  }, [profile, experiences]);
+  }, [profile, avatarFile, experiences]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  }
 
   function updateExperience(index: number, patch: Partial<ExperienceItem>) {
     setExperiences((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -228,19 +233,47 @@ export default function AlumniProfileForm({
   }
 
   async function handleSave() {
+    // VALIDASI DASAR
+    if (!profile.full_name || !profile.nickname) {
+      setAlert({
+        isOpen: true,
+        type: 'error',
+        title: 'Belum Lengkap!',
+        message: 'Harap isi setidaknya Nama Lengkap dan Nama Panggilan kamu.'
+      });
+      return;
+    }
+
     setSaving(true);
-    setMessage(null);
 
     try {
+      let finalAvatarUrl = profile.avatar_url;
+
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${userId}-${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+        
+        finalAvatarUrl = publicUrl;
+      }
+
       const payload = {
         user_id: userId,
         full_name: profile.full_name,
         nickname: profile.nickname || null,
         email: profile.email || null,
-        phone: profile.phone || null,
-        avatar_url: profile.avatar_url || null,
-        gender: profile.gender || null,
-        study_status: profile.study_status || null,
+        avatar_url: finalAvatarUrl || null,
+        gender: profile.gender ? profile.gender.toLowerCase() : null,
+        study_status: profile.study_status ? profile.study_status.toLowerCase() : null,
+        degree_level: profile.degree_level || null,
         intake_year: profile.intake_year ? Number(profile.intake_year) : null,
         graduation_year: profile.graduation_year ? Number(profile.graduation_year) : null,
         program: profile.program || null,
@@ -253,10 +286,6 @@ export default function AlumniProfileForm({
         linkedin_url: profile.linkedin_url || null,
         instagram_url: profile.instagram_url || null,
         website_url: profile.website_url || null,
-        is_public: profile.is_public,
-        show_email: profile.show_email,
-        show_phone: profile.show_phone,
-        show_city: profile.show_city,
         updated_at: new Date().toISOString(),
       };
 
@@ -301,322 +330,313 @@ export default function AlumniProfileForm({
         if (expError) throw expError;
       }
 
-      setMessage("Profil berhasil disimpan.");
+      setAlert({
+        isOpen: true,
+        type: 'success',
+        title: 'Profil Tersimpan!',
+        message: 'Perubahan profil kamu telah berhasil disimpan di direktori alumni.'
+      });
     } catch (error: any) {
-      setMessage(error?.message || "Gagal menyimpan profil.");
+      console.error(error);
+      setAlert({
+        isOpen: true,
+        type: 'error',
+        title: 'Oops!',
+        message: error?.message || 'Gagal menyimpan profil. Silakan coba lagi.'
+      });
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-3xl border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-white">Lengkapi Profil</h1>
-            <p className="mt-1 text-sm text-white/70">
-              Lengkapi data diri dan pengalaman untuk memperkuat profil alumni.
-            </p>
-          </div>
+    <>
+      <AlumniAlert 
+        {...alert} 
+        onClose={() => setAlert({ ...alert, isOpen: false })} 
+      />
 
-          <div className="min-w-[180px]">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-white/70">Progress</span>
-              <span className="font-semibold text-white">{completion}%</span>
+      <div className="space-y-8">
+        <section className="rounded-3xl border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-white">Lengkapi Profil</h1>
+              <p className="mt-1 text-sm text-white/70">
+                Lengkapi data diri dan pengalaman untuk memperkuat profil alumni.
+              </p>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#7dd3d3] via-[#5eb8b8] to-[#1a5a6d]"
-                style={{ width: `${completion}%` }}
+
+            <div className="min-w-[180px]">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-white/70">Progress</span>
+                <span className="font-semibold text-white">{completion}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#7dd3d3] via-[#5eb8b8] to-[#1a5a6d]"
+                  style={{ width: `${completion}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+          <SectionTitle title="Data Diri" />
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="mx-auto flex h-28 w-28 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/10 text-2xl font-semibold text-white transition hover:bg-white/15"
+              >
+                {avatarPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  (profile.full_name || "A").charAt(0).toUpperCase()
+                )}
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept="image/*"
+              />
+              <p className="mt-4 text-center text-xs text-white/60">
+                Klik lingkaran di atas untuk upload foto profil.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Nama Lengkap"
+                value={profile.full_name}
+                onChange={(v) => setProfile((prev) => ({ ...prev, full_name: v }))}
+              />
+              <Input
+                label="Nama Panggilan"
+                value={profile.nickname}
+                onChange={(v) => setProfile((prev) => ({ ...prev, nickname: v }))}
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={profile.email}
+                onChange={(v) => setProfile((prev) => ({ ...prev, email: v }))}
+              />
+              <Input
+                label="Kota"
+                value={profile.city}
+                onChange={(v) => setProfile((prev) => ({ ...prev, city: v }))}
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        {message ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-            {message}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-        <SectionTitle title="Data Diri" />
-        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/10 text-2xl font-semibold text-white">
-              {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                (profile.full_name || "A").charAt(0).toUpperCase()
-              )}
-            </div>
-            <p className="mt-4 text-center text-xs text-white/60">
-              Untuk sekarang avatar memakai URL agar nyambung cepat ke backend kamu.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+          <SectionTitle title="Informasi Umum" />
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Input
-              label="URL Foto Profil"
-              value={profile.avatar_url}
-              onChange={(v) => setProfile((prev) => ({ ...prev, avatar_url: v }))}
+              label="Tahun Masuk"
+              value={profile.intake_year}
+              onChange={(v) => setProfile((prev) => ({ ...prev, intake_year: v }))}
+              type="number"
+            />
+            <Input
+              label="Tahun Lulus"
+              value={profile.graduation_year}
+              onChange={(v) => setProfile((prev) => ({ ...prev, graduation_year: v }))}
+              type="number"
+            />
+            <Select
+              label="Jenjang"
+              value={profile.degree_level}
+              onChange={(v) => setProfile((prev) => ({ ...prev, degree_level: v }))}
+              options={DEGREE_LEVEL_OPTIONS}
+            />
+            <Select
+              label="Jenis Kelamin"
+              value={profile.gender}
+              onChange={(v) => setProfile((prev) => ({ ...prev, gender: v }))}
+              options={[
+                { label: "Laki-laki", value: "male" },
+                { label: "Perempuan", value: "female" },
+              ]}
+            />
+            <Select
+              label="Status Studi"
+              value={profile.study_status}
+              onChange={(v) => setProfile((prev) => ({ ...prev, study_status: v }))}
+              options={[
+                { label: "Aktif", value: "active" },
+                { label: "Lulus", value: "graduated" },
+                { label: "Cuti", value: "on_leave" },
+              ]}
+            />
+            <Input
+              label="Program"
+              value={profile.program}
+              onChange={(v) => setProfile((prev) => ({ ...prev, program: v }))}
+            />
+            <Input
+              label="Institusi / Kampus"
+              value={profile.institution}
+              onChange={(v) => setProfile((prev) => ({ ...prev, institution: v }))}
+            />
+            <Input
+              label="Posisi Saat Ini"
+              value={profile.current_position}
+              onChange={(v) => setProfile((prev) => ({ ...prev, current_position: v }))}
+            />
+            <Input
+              label="Perusahaan / Instansi"
+              value={profile.current_company}
+              onChange={(v) => setProfile((prev) => ({ ...prev, current_company: v }))}
+            />
+            <Input
+              label="Bidang Pekerjaan"
+              value={profile.field_of_work}
+              onChange={(v) => setProfile((prev) => ({ ...prev, field_of_work: v }))}
+            />
+          </div>
+
+          <div className="mt-4">
+            <Textarea
+              label="Bio Singkat"
+              value={profile.short_bio}
+              onChange={(v) => setProfile((prev) => ({ ...prev, short_bio: v }))}
+              placeholder="Ceritakan singkat perjalanan akademik atau profesionalmu."
+            />
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+          <SectionTitle title="Tautan Profesional" />
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Input
+              label="LinkedIn"
+              value={profile.linkedin_url}
+              onChange={(v) => setProfile((prev) => ({ ...prev, linkedin_url: v }))}
+              placeholder="https://linkedin.com/in/..."
+            />
+            <Input
+              label="Instagram"
+              value={profile.instagram_url}
+              onChange={(v) => setProfile((prev) => ({ ...prev, instagram_url: v }))}
+              placeholder="https://instagram.com/..."
+            />
+            <Input
+              label="Website / Portofolio"
+              value={profile.website_url}
+              onChange={(v) => setProfile((prev) => ({ ...prev, website_url: v }))}
               placeholder="https://..."
             />
-            <Input
-              label="Nama Lengkap"
-              value={profile.full_name}
-              onChange={(v) => setProfile((prev) => ({ ...prev, full_name: v }))}
-            />
-            <Input
-              label="Nama Panggilan"
-              value={profile.nickname}
-              onChange={(v) => setProfile((prev) => ({ ...prev, nickname: v }))}
-            />
-            <Input
-              label="Email"
-              type="email"
-              value={profile.email}
-              onChange={(v) => setProfile((prev) => ({ ...prev, email: v }))}
-            />
-            <Input
-              label="No. HP"
-              value={profile.phone}
-              onChange={(v) => setProfile((prev) => ({ ...prev, phone: v }))}
-            />
-            <Input
-              label="Kota"
-              value={profile.city}
-              onChange={(v) => setProfile((prev) => ({ ...prev, city: v }))}
-            />
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-        <SectionTitle title="Informasi Umum" />
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Input
-            label="Tahun Masuk"
-            value={profile.intake_year}
-            onChange={(v) => setProfile((prev) => ({ ...prev, intake_year: v }))}
-            type="number"
-          />
-          <Input
-            label="Tahun Lulus"
-            value={profile.graduation_year}
-            onChange={(v) => setProfile((prev) => ({ ...prev, graduation_year: v }))}
-            type="number"
-          />
-          <Select
-            label="Jenis Kelamin"
-            value={profile.gender}
-            onChange={(v) => setProfile((prev) => ({ ...prev, gender: v }))}
-            options={[
-              { label: "Laki-laki", value: "MALE" },
-              { label: "Perempuan", value: "FEMALE" },
-            ]}
-          />
-          <Select
-            label="Status Studi"
-            value={profile.study_status}
-            onChange={(v) => setProfile((prev) => ({ ...prev, study_status: v }))}
-            options={[
-              { label: "Aktif", value: "ACTIVE" },
-              { label: "Lulus", value: "GRADUATED" },
-              { label: "Cuti", value: "ON_LEAVE" },
-            ]}
-          />
-          <Input
-            label="Program"
-            value={profile.program}
-            onChange={(v) => setProfile((prev) => ({ ...prev, program: v }))}
-          />
-          <Input
-            label="Institusi / Kampus"
-            value={profile.institution}
-            onChange={(v) => setProfile((prev) => ({ ...prev, institution: v }))}
-          />
-          <Input
-            label="Posisi Saat Ini"
-            value={profile.current_position}
-            onChange={(v) => setProfile((prev) => ({ ...prev, current_position: v }))}
-          />
-          <Input
-            label="Perusahaan / Instansi"
-            value={profile.current_company}
-            onChange={(v) => setProfile((prev) => ({ ...prev, current_company: v }))}
-          />
-          <Input
-            label="Bidang Pekerjaan"
-            value={profile.field_of_work}
-            onChange={(v) => setProfile((prev) => ({ ...prev, field_of_work: v }))}
-          />
-        </div>
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+          <div className="flex items-center justify-between gap-4">
+            <SectionTitle title="Pengalaman" />
+            <button
+              type="button"
+              onClick={addExperience}
+              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur-xl hover:bg-white/15"
+            >
+              Tambah Pengalaman
+            </button>
+          </div>
 
-        <div className="mt-4">
-          <Textarea
-            label="Bio Singkat"
-            value={profile.short_bio}
-            onChange={(v) => setProfile((prev) => ({ ...prev, short_bio: v }))}
-            placeholder="Ceritakan singkat perjalanan akademik atau profesionalmu."
-          />
-        </div>
-      </section>
+          <div className="mt-6 space-y-4">
+            {experiences.map((item, index) => (
+              <div
+                key={`${item.id ?? "new"}-${index}`}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+              >
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <p className="text-sm font-semibold text-white">
+                    Pengalaman {index + 1}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => removeExperience(index)}
+                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80"
+                  >
+                    Hapus
+                  </button>
+                </div>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-        <SectionTitle title="Tautan Profesional" />
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Input
-            label="LinkedIn"
-            value={profile.linkedin_url}
-            onChange={(v) => setProfile((prev) => ({ ...prev, linkedin_url: v }))}
-            placeholder="https://linkedin.com/in/..."
-          />
-          <Input
-            label="Instagram"
-            value={profile.instagram_url}
-            onChange={(v) => setProfile((prev) => ({ ...prev, instagram_url: v }))}
-            placeholder="https://instagram.com/..."
-          />
-          <Input
-            label="Website / Portofolio"
-            value={profile.website_url}
-            onChange={(v) => setProfile((prev) => ({ ...prev, website_url: v }))}
-            placeholder="https://..."
-          />
-        </div>
-      </section>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <Select
+                    label="Tipe"
+                    value={item.type}
+                    onChange={(v) => updateExperience(index, { type: v })}
+                    options={EXPERIENCE_TYPE_OPTIONS}
+                  />
+                  <Input
+                    label="Judul"
+                    value={item.title}
+                    onChange={(v) => updateExperience(index, { title: v })}
+                    placeholder="Software Engineer / Juara 1 / dll"
+                  />
+                  <Input
+                    label="Organisasi"
+                    value={item.organization}
+                    onChange={(v) => updateExperience(index, { organization: v })}
+                  />
+                  <Input
+                    label="Peran"
+                    value={item.role_name}
+                    onChange={(v) => updateExperience(index, { role_name: v })}
+                  />
+                  <Input
+                    label="Tahun Mulai"
+                    type="number"
+                    value={item.start_year}
+                    onChange={(v) => updateExperience(index, { start_year: v })}
+                  />
+                  <Input
+                    label="Tahun Selesai"
+                    type="number"
+                    value={item.end_year}
+                    onChange={(v) => updateExperience(index, { end_year: v })}
+                  />
+                  <Input
+                    label="Tahun Prestasi"
+                    type="number"
+                    value={item.achievement_year}
+                    onChange={(v) => updateExperience(index, { achievement_year: v })}
+                  />
+                </div>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-        <div className="flex items-center justify-between gap-4">
-          <SectionTitle title="Pengalaman" />
+                <div className="mt-4">
+                  <Textarea
+                    label="Deskripsi"
+                    value={item.description}
+                    onChange={(v) => updateExperience(index, { description: v })}
+                    placeholder="Tambahkan deskripsi singkat."
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
-            onClick={addExperience}
-            className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur-xl hover:bg-white/15"
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-full border border-[#7dd3d3]/30 bg-[#7dd3d3]/10 px-8 py-3 text-sm font-bold text-[#7dd3d3] backdrop-blur-xl transition hover:bg-[#7dd3d3]/20 disabled:opacity-60"
           >
-            Tambah Pengalaman
+            {saving ? "Menyimpan..." : "Simpan Profil"}
           </button>
         </div>
-
-        <div className="mt-6 space-y-4">
-          {experiences.map((item, index) => (
-            <div
-              key={`${item.id ?? "new"}-${index}`}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4"
-            >
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold text-white">
-                  Pengalaman {index + 1}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => removeExperience(index)}
-                  className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80"
-                >
-                  Hapus
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Select
-                  label="Tipe"
-                  value={item.type}
-                  onChange={(v) => updateExperience(index, { type: v })}
-                  options={EXPERIENCE_TYPE_OPTIONS}
-                />
-                <Input
-                  label="Judul"
-                  value={item.title}
-                  onChange={(v) => updateExperience(index, { title: v })}
-                  placeholder="Software Engineer / Juara 1 / dll"
-                />
-                <Input
-                  label="Organisasi"
-                  value={item.organization}
-                  onChange={(v) => updateExperience(index, { organization: v })}
-                />
-                <Input
-                  label="Peran"
-                  value={item.role_name}
-                  onChange={(v) => updateExperience(index, { role_name: v })}
-                />
-                <Input
-                  label="Tahun Mulai"
-                  type="number"
-                  value={item.start_year}
-                  onChange={(v) => updateExperience(index, { start_year: v })}
-                />
-                <Input
-                  label="Tahun Selesai"
-                  type="number"
-                  value={item.end_year}
-                  onChange={(v) => updateExperience(index, { end_year: v })}
-                />
-                <Input
-                  label="Tahun Prestasi"
-                  type="number"
-                  value={item.achievement_year}
-                  onChange={(v) => updateExperience(index, { achievement_year: v })}
-                />
-              </div>
-
-              <div className="mt-4">
-                <Textarea
-                  label="Deskripsi"
-                  value={item.description}
-                  onChange={(v) => updateExperience(index, { description: v })}
-                  placeholder="Tambahkan deskripsi singkat."
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-        <SectionTitle title="Privasi Profil" />
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Toggle
-            label="Tampilkan profil di direktori alumni"
-            checked={profile.is_public}
-            onChange={(v) => setProfile((prev) => ({ ...prev, is_public: v }))}
-          />
-          <Toggle
-            label="Tampilkan email"
-            checked={profile.show_email}
-            onChange={(v) => setProfile((prev) => ({ ...prev, show_email: v }))}
-          />
-          <Toggle
-            label="Tampilkan nomor HP"
-            checked={profile.show_phone}
-            onChange={(v) => setProfile((prev) => ({ ...prev, show_phone: v }))}
-          />
-          <Toggle
-            label="Tampilkan kota"
-            checked={profile.show_city}
-            onChange={(v) => setProfile((prev) => ({ ...prev, show_city: v }))}
-          />
-        </div>
-      </section>
-
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:bg-white/15 disabled:opacity-60"
-        >
-          {saving ? "Menyimpan..." : "Simpan Profil"}
-        </button>
       </div>
-    </div>
+    </>
   );
 }

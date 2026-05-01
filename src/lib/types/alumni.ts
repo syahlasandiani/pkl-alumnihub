@@ -2,6 +2,7 @@ export type DegreeLevel = "S1" | "S2" | "S3";
 
 export type Alumni = {
   id: string;
+  user_id?: string;
   full_name: string;
   username?: string;
   intake_year: number;

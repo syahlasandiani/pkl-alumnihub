@@ -32,9 +32,12 @@ function generateAlumniMock100(base: Alumni[], target = 100): Alumni[] {
   return out;
 }
 
-export default function AlumniDirectoryClient() {
-  // generate data 100 dari alumniMock
-  const alumniData = useMemo(() => generateAlumniMock100(alumniMock, 100), []);
+interface AlumniDirectoryClientProps {
+  initialData: Alumni[];
+}
+
+export default function AlumniDirectoryClient({ initialData }: AlumniDirectoryClientProps) {
+  const alumniData = initialData;
 
   const YEARS = useMemo(() => {
     const set = new Set<number>();
@@ -168,7 +171,7 @@ export default function AlumniDirectoryClient() {
           <>
             <div className="mt-8 grid grid-cols-4 gap-8">
               {paged.map((alumni) => (
-                <AlumniCard key={alumni.id} alumni={alumni} />
+                <AlumniCard key={alumni.user_id || alumni.id} alumni={alumni} />
               ))}
             </div>
 

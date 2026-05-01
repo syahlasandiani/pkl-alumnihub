@@ -1,122 +1,137 @@
-// src/app/(public)/learning-hub/page.tsx
 import Link from "next/link";
 import SectionHeading from "@/components/shared/SectionHeading";
 import BackCTA from "@/components/ui/BackCTA";
-
 import HubSectionHeader from "@/components/learning-hub/HubSectionHeader";
 import EventPreviewCard from "@/components/learning-hub/EventPreviewCard";
 import ArticlePreviewCard from "@/components/ArticlePreviewCard";
-import ForumTopicCard from "@/components/learning-hub/ForumTopicCard";
+import HubCard from "@/components/learning-hub/HubCard";
+import { getEvents } from "@/lib/data/events";
+import { getArticles } from "@/lib/data/articles";
+import { CalendarDays, BookOpen, FileText, MessageSquare } from "lucide-react";
 
-import GlassCard from "@/components/ui/GlassCard";
+export default async function LearningHubPage() {
+  const [events, articles] = await Promise.all([
+    getEvents(),
+    getArticles()
+  ]);
 
-import {
-  eventPreview,
-  articlePreview,
-  resourcesPreview,
-  forumPreview,
-} from "@/lib/data/mock/learningHub.mock";
+  const recentEvents = events.slice(0, 3);
+  const recentArticles = articles.slice(0, 3);
 
-export default function LearningHubPage() {
+  const navigationItems = [
+    {
+      title: "Event Alumni",
+      description: "Webinar, mentoring, sharing session, dan kolaborasi.",
+      href: "/learning-hub/events",
+      icon: CalendarDays,
+    },
+    {
+      title: "Konten Unggulan",
+      description: "Artikel persiapan, karier, akademik, komunitas.",
+      href: "/learning-hub/articles",
+      icon: BookOpen,
+    },
+    {
+      title: "Resources",
+      description: "Template, contoh essay, dan panduan berkas.",
+      href: "/learning-hub/resources",
+      icon: FileText,
+    },
+    {
+      title: "Forum Diskusi",
+      description: "Tanya-jawab dan diskusi komunitas seputar BU.",
+      href: "/forum",
+      icon: MessageSquare,
+    },
+  ];
+
   return (
-    <main className="relative min-h-screen">
-      {/* BACKGROUND + OVERLAY (biar konsisten kayak /alumni) */}
+    <main className="relative min-h-screen pb-24">
+      {/* BACKGROUND + OVERLAY */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center"
         style={{ backgroundImage: "url(/assets/backgrounds/home-bg.jpg)" }}
       />
-      <div className="fixed inset-0 -z-10 bg-black/35" />
+      <div className="fixed inset-0 -z-10 bg-black/45 backdrop-blur-[2px]" />
 
-      <section className="px-6 scroll-mt-32">
-        <div className="max-w-6xl mx-auto pt-6 md:pt-8 pb-24">
-          {/* CTA Kembali */}
-          <div className="mb-6">
-            <BackCTA href="/#learning-hub" />
+      <section className="px-6">
+        <div className="max-w-6xl mx-auto pt-8">
+          <div className="mb-8">
+            <BackCTA href="/" />
           </div>
 
           <SectionHeading
             title="Learning Hub"
-            subtitle="Pusat pembelajaran komunitas Beasiswa Unggulan: event, konten unggulan, resources persiapan, dan forum diskusi."
+            subtitle="Pusat pengembangan diri komunitas Beasiswa Unggulan. Akses event, konten unggulan, dan resources terbaik dari para alumni."
             align="left"
           />
 
-          {/* EVENT */}
-          <HubSectionHeader title="Event Alumni" />
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {eventPreview.map((e) => (
-              <EventPreviewCard key={e.href} {...e} />
+          {/* QUICK LINKS GRID - Matches Home Page Design */}
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {navigationItems.map((item) => (
+              <HubCard key={item.title} {...item} />
             ))}
           </div>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/learning-hub/events"
-              className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 text-white px-7 py-3 font-semibold hover:bg-white/15 transition"
-            >
-              Lihat Semua Event <span className="ml-2">→</span>
-            </Link>
-          </div>
 
-          {/* ARTICLES */}
-          <HubSectionHeader title="Konten Unggulan" />
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articlePreview.map((a) => (
-              <ArticlePreviewCard key={a.href} {...a} />
-            ))}
-          </div>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/learning-hub/articles"
-              className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 text-white px-7 py-3 font-semibold hover:bg-white/15 transition"
-            >
-              Lihat Semua Artikel <span className="ml-2">→</span>
-            </Link>
-          </div>
-
-          {/* RESOURCES */}
-          <HubSectionHeader title="Resources" />
-          <GlassCard className="mt-6 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {Object.entries(resourcesPreview).map(([group, items]) => (
-                <div key={group}>
-                  <div className="text-white font-semibold">{group}</div>
-                  <div className="mt-4 space-y-3">
-                    {items.map((it) => (
-                      <Link
-                        key={it.href}
-                        href={it.href}
-                        className="block text-white/75 hover:text-white transition text-sm"
-                      >
-                        {it.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          {/* EVENT SECTION */}
+          <div className="mt-24">
+            <HubSectionHeader title="Event Alumni" />
+            {recentEvents.length > 0 ? (
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recentEvents.map((e) => (
+                  <EventPreviewCard 
+                    key={e.id} 
+                    title={e.title}
+                    date={new Date(e.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    time={e.event_time}
+                    mode={e.type === 'online' ? 'Online' : 'Offline'}
+                    href={`/learning-hub/events/${e.id}`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-8 rounded-3xl bg-white/5 p-12 text-center border border-white/5">
+                <p className="text-white/40 italic">Belum ada event mendatang.</p>
+              </div>
+            )}
+            <div className="mt-10 flex justify-center">
+              <Link
+                href="/learning-hub/events"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+                Lihat Semua Event <span>→</span>
+              </Link>
             </div>
-          </GlassCard>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/learning-hub/resources"
-              className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 text-white px-7 py-3 font-semibold hover:bg-white/15 transition"
-            >
-              Buka Semua Resources <span className="ml-2">→</span>
-            </Link>
           </div>
 
-          {/* FORUM */}
-          <HubSectionHeader title="Forum Diskusi" />
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {forumPreview.map((t) => (
-              <ForumTopicCard key={t.href} {...t} />
-            ))}
-          </div>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/learning-hub/forum"
-              className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 text-white px-7 py-3 font-semibold hover:bg-white/15 transition"
-            >
-              Masuk Forum Diskusi <span className="ml-2">→</span>
-            </Link>
+          {/* ARTICLES SECTION */}
+          <div className="mt-24">
+            <HubSectionHeader title="Konten Unggulan" />
+            {recentArticles.length > 0 ? (
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {recentArticles.map((a) => (
+                  <ArticlePreviewCard 
+                    key={a.id} 
+                    title={a.title}
+                    category="Inspirasi"
+                    href={`/learning-hub/articles/${a.id}`}
+                    cover={a.cover_url || "/assets/placeholders/article-placeholder.jpg"}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-8 rounded-3xl bg-white/5 p-12 text-center border border-white/5">
+                <p className="text-white/40 italic">Belum ada konten unggulan terbaru.</p>
+              </div>
+            )}
+            <div className="mt-10 flex justify-center">
+              <Link
+                href="/learning-hub/articles"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+                Baca Semua Konten <span>→</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>

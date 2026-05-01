@@ -14,8 +14,8 @@ type AlumniShellProps = {
 export default function AlumniShell({
   title,
   subtitle,
-  backHref = "/alumni",
-  backLabel = "Kembali ke Dashboard",
+  backHref,
+  backLabel,
   actionLabel,
   actionHref,
   children,
@@ -54,12 +54,14 @@ export default function AlumniShell({
           </header>
 
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <Link
-              href={backHref}
-              className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-xl transition hover:bg-white/15 hover:text-white"
-            >
-              ← {backLabel}
-            </Link>
+            {backHref && backLabel ? (
+              <Link
+                href={backHref}
+                className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-xl transition hover:bg-white/15 hover:text-white"
+              >
+                ← {backLabel}
+              </Link>
+            ) : null}
 
             {actionLabel && actionHref ? (
               <Link

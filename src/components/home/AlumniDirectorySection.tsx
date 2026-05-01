@@ -1,10 +1,13 @@
-// src/components/home/AlumniDirectorySection.tsx
 import Link from "next/link";
 import SectionHeading from "@/components/shared/SectionHeading";
 import AlumniCard from "@/components/alumni/AlumniCard";
-import { alumniMock } from "@/lib/data/mock/alumni.mock";
+import { Alumni } from "@/lib/types/alumni";
 
-export default function AlumniDirectorySection() {
+interface AlumniDirectorySectionProps {
+  initialData: Alumni[];
+}
+
+export default function AlumniDirectorySection({ initialData }: AlumniDirectorySectionProps) {
   return (
     <section id="alumni" className="px-6">
       <div className="max-w-6xl mx-auto">
@@ -15,8 +18,8 @@ export default function AlumniDirectorySection() {
         />
 
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {alumniMock.slice(0, 8).map((alumni) => (
-            <AlumniCard key={alumni.id} alumni={alumni} />
+          {initialData.map((alumni) => (
+            <AlumniCard key={alumni.user_id} alumni={alumni} />
           ))}
         </div>
 
