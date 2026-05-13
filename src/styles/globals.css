@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@reference "tailwindcss";
+
+:root {
+  --gradient-start: #7dd3d3;
+  --gradient-mid: #5eb8b8;
+  --gradient-end: #1a5a6d;
+
+  --background: #000000;
+  --foreground: #171717;
+  --primary: #5eb8b8;
+  --primary-dark: #1a5a6d;
+  --accent: #7dd3d3;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Utility class for the main gradient background */
+.bg-gradient-main {
+  background: linear-gradient(
+    180deg,
+    var(--gradient-start) 0%,
+    var(--gradient-mid) 50%,
+    var(--gradient-end) 100%
+  );
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start) 0%,
+    var(--gradient-end) 100%
+  );
+}
+
+.bg-gradient-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(36, 36, 36, 0.9) 0%,
+    rgba(39, 39, 39, 0.9) 50%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+}
+
+.bg-gradient-overlay-double {
+  background: linear-gradient(180deg, 
+    rgba(97, 97, 97, 0.35) 0%, 
+    rgba(0, 0, 0, 0.55) 50%, 
+    rgba(77, 77, 77, 0.35) 100%
+  );
+}
+
+
+/* Text gradient utility */
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start) 0%,
+    var(--primary-dark) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@layer components {
+  .typo-hero-title {
+    @apply text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight;
+  }
+
+  .typo-hero-subtitle {
+    @apply text-lg sm:text-xl lg:text-2xl font-medium;
+  }
+
+  .typo-section-title {
+    @apply text-3xl sm:text-4xl font-semibold;
+  }
+
+  .typo-card-title {
+    @apply text-lg sm:text-xl font-semibold;
+  }
+
+  .typo-body-lg {
+    @apply text-base sm:text-lg leading-relaxed;
+  }
+
+  .typo-body {
+    @apply text-sm sm:text-base leading-relaxed;
+  }
+
+  .typo-small {
+    @apply text-xs sm:text-sm;
+  }
+
+  .typo-date {
+  @apply text-base sm:text-lg font-semibold;
+}
+
+}
