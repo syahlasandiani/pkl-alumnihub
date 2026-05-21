@@ -38,15 +38,63 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: profile } = await supabase
+    let profile = null;
+    const { data: existingProfile, error: profileError } = await supabase
       .from("profiles")
       .select("role, verification_status, account_status")
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.account_status !== "ACTIVE") {
+    if (profileError) {
+      if (profileError.code === "PGRST116") {
+        // Create profile row dynamically if missing
+        const displayName =
+          user.user_metadata?.display_name ||
+          user.user_metadata?.full_name ||
+          user.email?.split("@")[0] ||
+          "User";
+
+        const { data: newProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            display_name: displayName.substring(0, 100),
+            role: "USER",
+            account_status: "ACTIVE",
+            verification_status: "NONE",
+          })
+          .select("role, verification_status, account_status")
+          .single();
+
+        if (createError) {
+          console.error("Gagal membuat profil otomatis:", createError);
+          return NextResponse.json(
+            { error: `Profil tidak ditemukan dan gagal dibuat secara otomatis: ${createError.message}` },
+            { status: 500 }
+          );
+        }
+        profile = newProfile;
+      } else {
+        console.error("Profile query error:", profileError);
+        return NextResponse.json(
+          { error: `Gagal mengambil profil: ${profileError.message} (code: ${profileError.code})` },
+          { status: 500 }
+        );
+      }
+    } else {
+      profile = existingProfile;
+    }
+
+    if (!profile) {
       return NextResponse.json(
-        { error: "Akun tidak aktif atau profil tidak ditemukan." },
+        { error: "Profil tidak ditemukan untuk akun ini." },
+        { status: 404 }
+      );
+    }
+
+    if (profile.account_status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Akun tidak aktif. Hubungi admin untuk mengaktifkan kembali." },
         { status: 403 }
       );
     }
@@ -85,7 +133,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: insertError } = await supabase
+    const { data: requestData, error: insertError } = await supabase
       .from("verification_requests")
       .insert({
         user_id: user.id,
@@ -93,17 +141,36 @@ export async function POST(req: Request) {
         intake_year: intakeYear,
         program,
         institution,
-        document_url: documentUrl,
         status: "PENDING",
         submission_number: nextSubmissionNumber,
         admin_note: null,
         reviewed_by: null,
         reviewed_at: null,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !requestData) {
+      return NextResponse.json(
+        { error: insertError?.message || "Gagal menyimpan pengajuan." },
+        { status: 500 }
+      );
+    }
+
+    const { error: docError } = await supabase
+      .from("verification_documents")
+      .insert({
+        verification_request_id: requestData.id,
+        file_path: documentUrl,
+        original_filename: "bukti_alumni",
+        document_type: "OTHER",
       });
 
-    if (insertError) {
+    if (docError) {
+      // Rollback request
+      await supabase.from("verification_requests").delete().eq("id", requestData.id);
       return NextResponse.json(
-        { error: insertError.message || "Gagal menyimpan pengajuan." },
+        { error: docError.message || "Gagal menyimpan dokumen bukti." },
         { status: 500 }
       );
     }

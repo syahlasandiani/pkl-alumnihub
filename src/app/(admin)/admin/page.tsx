@@ -1,55 +1,29 @@
 import Link from "next/link";
 
-const quickActions = [
-  {
-    title: "Kelola Verifikasi",
-    desc: "Lihat dan proses pengajuan verifikasi alumni.",
-    href: "/admin/verifications",
-  },
-  {
-    title: "Moderasi Forum",
-    desc: "Tinjau thread dan komentar yang perlu dimoderasi.",
-    href: "/admin/moderation",
-  },
-  {
-    title: "Kelola Pengguna",
-    desc: "Nonaktifkan atau aktifkan kembali akun pengguna.",
-    href: "/admin/users",
-  },
-  {
-    title: "Kurasi Konten",
-    desc: "Pilih konten atau resource unggulan untuk beranda.",
-    href: "/admin/highlights",
-  },
-];
+import AdminDashboardClient from "./AdminDashboardClient";
+import {
+  getAdminDashboardStats,
+  getAdminUsers,
+  getAdminEvents,
+  getAdminArticles,
+  getAdminResources,
+} from "./actions";
 
-const stats = [
-  { label: "Pending Verifikasi", value: 8 },
-  { label: "Alumni Verified", value: 124 },
-  { label: "Thread Aktif", value: 37 },
-  { label: "Resource Publik", value: 21 },
-];
+export default async function AdminDashboardPage() {
+  const [stats, users, events, articles, resources] = await Promise.all([
+    getAdminDashboardStats(),
+    getAdminUsers(),
+    getAdminEvents(),
+    getAdminArticles(),
+    getAdminResources(),
+  ]);
 
-const activities = [
-  {
-    title: "3 pengajuan verifikasi baru menunggu review",
-    meta: "Verifikasi • Hari ini",
-  },
-  {
-    title: "1 thread dilaporkan oleh pengguna",
-    meta: "Forum • 2 jam lalu",
-  },
-  {
-    title: "2 resource baru diunggah oleh alumni",
-    meta: "Resource • 1 hari lalu",
-  },
-  {
-    title: "1 akun pengguna dinonaktifkan",
-    meta: "User • 2 hari lalu",
-  },
-];
-
-export default function AdminDashboardPage() {
+  const data = {
+    users,
+    events,
+    articles,
+    resources,
+  };
   return (
     <main className="relative min-h-screen">
       <div
@@ -102,19 +76,15 @@ export default function AdminDashboardPage() {
                   Fokus Hari Ini
                 </h2>
                 <p className="mt-2 text-sm text-white/70">
-                  Prioritaskan pengajuan verifikasi dan laporan forum yang masih
-                  menunggu tindakan.
+                  Prioritaskan pengajuan verifikasi alumni yang masih menunggu tindakan review Anda.
                 </p>
 
                 <div className="mt-4 space-y-2">
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-                    8 pengajuan verifikasi pending
+                    <span className="font-semibold text-[#c8ffff]">{stats.pendingVerifications}</span> pengajuan verifikasi pending
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-                    1 laporan thread baru
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-                    2 resource menunggu peninjauan
+                    <span className="font-semibold text-[#c8ffff]">{stats.events}</span> total event aktif
                   </div>
                 </div>
 
@@ -128,73 +98,7 @@ export default function AdminDashboardPage() {
             </div>
           </section>
 
-          <section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {quickActions.map((action) => (
-              <Link
-                key={action.title}
-                href={action.href}
-                className="rounded-[28px] border border-white/15 bg-white/10 p-5 backdrop-blur-xl transition hover:bg-white/15"
-              >
-                <p className="text-base font-semibold text-white">
-                  {action.title}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-white/70">
-                  {action.desc}
-                </p>
-                <p className="mt-5 text-sm font-semibold text-[#c8ffff]">
-                  Buka →
-                </p>
-              </Link>
-            ))}
-          </section>
-
-          <section className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl xl:col-span-1">
-              <h2 className="text-xl font-semibold text-white">
-                Ringkasan Sistem
-              </h2>
-              <p className="mt-1 text-sm text-white/70">
-                Statistik singkat aktivitas dan komunitas.
-              </p>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                {stats.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
-                  >
-                    <p className="text-2xl font-semibold text-white">
-                      {item.value}
-                    </p>
-                    <p className="mt-1 text-sm text-white/60">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl xl:col-span-2">
-              <h2 className="text-xl font-semibold text-white">
-                Aktivitas Terbaru
-              </h2>
-              <p className="mt-1 text-sm text-white/70">
-                Ringkasan antrian kerja admin terbaru.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                {activities.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <p className="text-sm font-medium text-white/90">
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-white/50">{item.meta}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+          <AdminDashboardClient stats={stats} data={data} />
         </div>
       </section>
     </main>

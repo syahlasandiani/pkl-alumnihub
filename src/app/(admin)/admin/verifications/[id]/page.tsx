@@ -53,8 +53,9 @@ function getStatusBadge(status: string) {
 export default async function AdminVerificationDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
@@ -67,15 +68,15 @@ export default async function AdminVerificationDetailPage({
         intake_year,
         program,
         institution,
-        document_url,
         status,
         submission_number,
         admin_note,
         created_at,
-        reviewed_at
+        reviewed_at,
+        verification_documents(file_path)
       `
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .maybeSingle();
 
   if (error) {
@@ -86,7 +87,21 @@ export default async function AdminVerificationDetailPage({
     notFound();
   }
 
-  const item = data as VerificationDetail;
+  const rawItem = data as any;
+  const item: VerificationDetail = {
+    id: rawItem.id,
+    user_id: rawItem.user_id,
+    full_name: rawItem.full_name,
+    intake_year: rawItem.intake_year,
+    program: rawItem.program,
+    institution: rawItem.institution,
+    document_url: rawItem.verification_documents?.[0]?.file_path || null,
+    status: rawItem.status,
+    submission_number: rawItem.submission_number,
+    admin_note: rawItem.admin_note,
+    created_at: rawItem.created_at,
+    reviewed_at: rawItem.reviewed_at,
+  };
 
   return (
     <main className="relative min-h-screen overflow-hidden">
