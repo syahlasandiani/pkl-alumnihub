@@ -3,6 +3,8 @@
 import { useMemo, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AlumniAlert from "@/components/ui/AlumniAlert";
+import GlassCard from "@/components/ui/GlassCard";
+import CTAButton from "@/components/ui/CTAButton";
 
 type ExperienceItem = {
   id?: string;
@@ -40,6 +42,7 @@ type AlumniProfileFormProps = {
     website_url: string;
   };
   experiences: ExperienceItem[];
+  isVerified?: boolean;
 };
 
 function SectionTitle({ title }: { title: string }) {
@@ -149,6 +152,7 @@ export default function AlumniProfileForm({
   userId,
   profile: initialProfile,
   experiences: initialExperiences,
+  isVerified = false,
 }: AlumniProfileFormProps) {
   const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -357,7 +361,7 @@ export default function AlumniProfileForm({
       />
 
       <div className="space-y-8">
-        <section className="rounded-3xl border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
+        <GlassCard className="p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-white">Lengkapi Profil</h1>
@@ -379,9 +383,9 @@ export default function AlumniProfileForm({
               </div>
             </div>
           </div>
-        </section>
+        </GlassCard>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+        <GlassCard className="p-6">
           <SectionTitle title="Data Diri" />
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
             <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
@@ -436,9 +440,18 @@ export default function AlumniProfileForm({
               />
             </div>
           </div>
-        </section>
+        </GlassCard>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+        <GlassCard className="p-6 relative overflow-hidden">
+          {!isVerified && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+              <span className="text-[#c8ffff] font-semibold text-lg mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Fitur Terkunci
+              </span>
+              <span className="text-white/80 text-sm max-w-sm text-center">Tunggu hingga pengajuan verifikasi disetujui admin untuk mengelola informasi umum pendidikan dan pekerjaan.</span>
+            </div>
+          )}
           <SectionTitle title="Informasi Umum" />
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Input
@@ -513,9 +526,9 @@ export default function AlumniProfileForm({
               placeholder="Ceritakan singkat perjalanan akademik atau profesionalmu."
             />
           </div>
-        </section>
+        </GlassCard>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+        <GlassCard className="p-6">
           <SectionTitle title="Tautan Profesional" />
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Input
@@ -537,18 +550,23 @@ export default function AlumniProfileForm({
               placeholder="https://..."
             />
           </div>
-        </section>
+        </GlassCard>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+        <GlassCard className="p-6 relative overflow-hidden">
+          {!isVerified && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-[26px]">
+              <span className="text-[#c8ffff] font-semibold text-lg mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Fitur Terkunci
+              </span>
+              <span className="text-white/80 text-sm max-w-sm text-center">Akun Alumni Verified dibutuhkan untuk membagikan riwayat pengalaman profesional dan prestasi.</span>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-4">
             <SectionTitle title="Pengalaman" />
-            <button
-              type="button"
-              onClick={addExperience}
-              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur-xl hover:bg-white/15"
-            >
+            <CTAButton variant="secondary" onClick={addExperience} disabled={!isVerified}>
               Tambah Pengalaman
-            </button>
+            </CTAButton>
           </div>
 
           <div className="mt-6 space-y-4">
@@ -624,17 +642,12 @@ export default function AlumniProfileForm({
               </div>
             ))}
           </div>
-        </section>
+        </GlassCard>
 
         <div className="flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-full border border-[#7dd3d3]/30 bg-[#7dd3d3]/10 px-8 py-3 text-sm font-bold text-[#7dd3d3] backdrop-blur-xl transition hover:bg-[#7dd3d3]/20 disabled:opacity-60"
-          >
-            {saving ? "Menyimpan..." : "Simpan Profil"}
-          </button>
+          <CTAButton onClick={handleSave} loading={saving}>
+            Simpan Profil
+          </CTAButton>
         </div>
       </div>
     </>

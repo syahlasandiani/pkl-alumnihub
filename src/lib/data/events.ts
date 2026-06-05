@@ -13,6 +13,7 @@ export interface AlumniEvent {
   image_url?: string | null;
   created_at?: string;
   status?: "PUBLISHED" | "CANCELLED" | "ARCHIVED" | "HIDDEN";
+  profiles?: { role: string } | null;
 }
 
 export async function getEvents() {
@@ -20,7 +21,7 @@ export async function getEvents() {
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select("*, profiles:creator_id(role)")
     .eq("status", "PUBLISHED")
     .order("event_date", { ascending: true });
 
@@ -37,7 +38,7 @@ export async function getEventDetail(id: string) {
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select("*, profiles:creator_id(role)")
     .eq("id", id)
     .eq("status", "PUBLISHED")
     .single();

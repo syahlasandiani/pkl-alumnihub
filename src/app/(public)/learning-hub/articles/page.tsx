@@ -24,7 +24,12 @@ export default async function ArticlesPage() {
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((art) => (
               <Link key={art.id} href={`/learning-hub/articles/${art.id}`} className="group block">
-                <GlassCard className="h-full overflow-hidden flex flex-col transition-all duration-500 hover:translate-y-[-8px] hover:bg-white/10">
+                <GlassCard className="h-full overflow-hidden flex flex-col transition-all duration-500 hover:translate-y-[-8px] hover:bg-white/10 relative">
+                  {art.profiles?.role === 'ADMIN' && (
+                    <div className="absolute top-4 left-4 bg-[#7dd3d3] text-[#0f172a] text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full z-10 shadow-sm backdrop-blur-md">
+                      Official
+                    </div>
+                  )}
                   {/* Cover Image */}
                   <div className="aspect-[16/10] overflow-hidden bg-white/5 relative">
                     {art.cover_url ? (

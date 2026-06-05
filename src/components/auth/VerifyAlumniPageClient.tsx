@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import BackCTA from "@/components/ui/BackCTA";
+import GlassCard from "@/components/ui/GlassCard";
+import CTAButton from "@/components/ui/CTAButton";
 
 export type VerifyState = "NONE" | "PENDING" | "REJECTED";
 
@@ -133,7 +135,7 @@ export default function VerifyAlumniPageClient({
         <BackCTA href="/alumni" label="Kembali" className="mb-6" />
 
         {/* Form Card */}
-        <div className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
+        <GlassCard className="p-6">
           {viewState === "NONE" && (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
@@ -216,19 +218,15 @@ export default function VerifyAlumniPageClient({
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-3">
-                <Link
-                  href="/alumni"
-                  className="rounded-full border border-white/10 bg-white/10 px-5 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/15 hover:text-white"
-                >
+                <CTAButton variant="secondary" href="/alumni">
                   Batal
-                </Link>
-                <button
+                </CTAButton>
+                <CTAButton
                   type="submit"
-                  disabled={submitting}
-                  className="rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:bg-white/15 disabled:opacity-60"
+                  loading={submitting}
                 >
-                  {submitting ? "Mengirim..." : "Ajukan Verifikasi"}
-                </button>
+                  Ajukan Verifikasi
+                </CTAButton>
               </div>
             </form>
           )}
@@ -250,21 +248,14 @@ export default function VerifyAlumniPageClient({
                 description="Kamu tidak perlu mengirim ulang selama status masih pending."
               />
               <StatusCard
-                title="Akses akun saat ini"
-                description="Kamu tetap bisa menggunakan akunmu sebagai Public User."
-              />
-              <StatusCard
                 title="Setelah disetujui"
                 description="Akunmu akan mendapat akses ke dashboard alumni, event, resource, dan konten."
               />
 
               <div className="flex justify-end">
-                <Link
-                  href="/alumni"
-                  className="rounded-full border border-white/10 bg-white/10 px-5 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/15 hover:text-white"
-                >
+                <CTAButton variant="secondary" href="/alumni">
                   Kembali ke Dashboard
-                </Link>
+                </CTAButton>
               </div>
             </div>
           )}
@@ -292,32 +283,21 @@ export default function VerifyAlumniPageClient({
               </div>
 
               <StatusCard
-                title="Hak akses akun saat ini"
-                description="Kamu tetap punya akses sebagai Public User."
-              />
-              <StatusCard
                 title="Ajukan ulang"
                 description="Perbarui data atau unggah bukti yang lebih sesuai, lalu kirim ulang pengajuan."
               />
 
               <div className="flex flex-wrap items-center justify-end gap-3">
-                <Link
-                  href="/alumni"
-                  className="rounded-full border border-white/10 bg-white/10 px-5 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/15 hover:text-white"
-                >
+                <CTAButton variant="secondary" href="/alumni">
                   Nanti Saja
-                </Link>
-                <button
-                  type="button"
-                  onClick={resetToForm}
-                  className="rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:bg-white/15"
-                >
+                </CTAButton>
+                <CTAButton type="button" onClick={resetToForm}>
                   Ajukan Ulang
-                </button>
+                </CTAButton>
               </div>
             </div>
           )}
-        </div>
+        </GlassCard>
       </div>
     </section>
   );

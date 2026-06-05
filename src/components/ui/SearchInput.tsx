@@ -1,16 +1,19 @@
 "use client";
 
 import { Search } from "lucide-react";
+import React from "react";
 
 type Props = {
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
 };
 
 export default function SearchInput({
   value,
+  defaultValue,
   onChange,
   placeholder = "Cari...",
   className = "",
@@ -22,7 +25,8 @@ export default function SearchInput({
       <Search className="h-4 w-4 text-white/70" />
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        defaultValue={defaultValue}
+        onChange={(e) => onChange?.(e.target.value)}
         placeholder={placeholder}
         className="w-full bg-transparent text-white placeholder:text-white/50 outline-none text-sm"
       />

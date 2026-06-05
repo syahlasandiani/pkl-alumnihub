@@ -38,12 +38,7 @@ export default async function LearningHubPage() {
 
   return (
     <main className="relative min-h-screen pb-24">
-      {/* BACKGROUND + OVERLAY */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundImage: "url(/assets/backgrounds/home-bg.jpg)" }}
-      />
-      <div className="fixed inset-0 -z-10 bg-black/45 backdrop-blur-[2px]" />
+      {/* Background is already handled by the parent layout */}
 
       <section className="px-6">
         <div className="max-w-6xl mx-auto pt-8">
@@ -82,6 +77,7 @@ export default async function LearningHubPage() {
                     time={e.event_time}
                     mode={e.type === "online" ? "Online" : "Offline"}
                     href={`/learning-hub/events/${e.id}`}
+                    isOfficial={e.profiles?.role === "ADMIN"}
                   />
                 ))}
               </div>
@@ -118,6 +114,7 @@ export default async function LearningHubPage() {
                     cover={
                       a.cover_url || "/assets/placeholders/article-placeholder.jpg"
                     }
+                    isOfficial={a.profiles?.role === "ADMIN"}
                   />
                 ))}
               </div>

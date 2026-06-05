@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import GlassCard from "@/components/ui/GlassCard";
+import CTAButton from "@/components/ui/CTAButton";
 
 export default function VerificationReviewPanel({
   requestId,
@@ -19,7 +21,9 @@ export default function VerificationReviewPanel({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isResolved =
-    currentStatus === "VERIFIED" || currentStatus === "REJECTED";
+    currentStatus === "VERIFIED" ||
+    currentStatus === "APPROVED" ||
+    currentStatus === "REJECTED";
 
   async function handleAction(action: "APPROVE" | "REJECT") {
     setLoadingAction(action);
@@ -54,9 +58,9 @@ export default function VerificationReviewPanel({
   }
 
   return (
-    <div className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
-      <h2 className="text-2xl font-semibold text-white">Aksi Review</h2>
-      <p className="mt-2 text-sm text-white/70">
+    <GlassCard className="p-6">
+      <h2 className="typo-card-title text-white">Aksi Review</h2>
+      <p className="mt-2 text-sm text-white/70 typo-body">
         Setujui atau tolak pengajuan alumni ini.
       </p>
 
@@ -73,23 +77,27 @@ export default function VerificationReviewPanel({
       ) : null}
 
       <div className="mt-5 space-y-3">
-        <button
+        <CTAButton
           type="button"
+          variant="success"
           disabled={isResolved || loadingAction !== null}
+          loading={loadingAction === "APPROVE"}
           onClick={() => handleAction("APPROVE")}
-          className="w-full rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/15 disabled:opacity-50"
+          className="w-full"
         >
-          {loadingAction === "APPROVE" ? "Memproses..." : "Approve"}
-        </button>
+          Approve
+        </CTAButton>
 
-        <button
+        <CTAButton
           type="button"
+          variant="danger"
           disabled={isResolved || loadingAction !== null}
+          loading={loadingAction === "REJECT"}
           onClick={() => handleAction("REJECT")}
-          className="w-full rounded-full border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/15 disabled:opacity-50"
+          className="w-full"
         >
-          {loadingAction === "REJECT" ? "Memproses..." : "Reject"}
-        </button>
+          Reject
+        </CTAButton>
       </div>
 
       <div className="mt-5 rounded-[26px] border border-white/10 bg-white/5 p-5">
@@ -106,6 +114,6 @@ export default function VerificationReviewPanel({
           />
         </label>
       </div>
-    </div>
+    </GlassCard>
   );
 }

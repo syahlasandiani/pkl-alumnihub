@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import BackCTA from "@/components/ui/BackCTA";
 import GlassPill from "@/components/ui/GlassPill";
 import GlassDialog from "@/components/ui/GlassDialog";
+import CTAButton from "@/components/ui/CTAButton";
 import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
@@ -29,7 +30,9 @@ function Field({
   );
 }
 
-export default function RegisterPage() {
+import { Suspense } from "react";
+
+function RegisterForm() {
   const supabase = createClient(); 
   
   const sp = useSearchParams();
@@ -162,26 +165,14 @@ export default function RegisterPage() {
           />
         </Field>
 
-        {/* <label className="flex items-start gap-3 text-white/70 text-sm pt-1">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={(e) => setAgree(e.target.checked)}
-            className="mt-1"
-          />
-          <span>
-            Saya setuju menggunakan platform ini untuk kebutuhan Alumni Hub
-            (demo PKL). Data yang diisi bersifat dummy.
-          </span>
-        </label> */}
-
-        <button
+        <CTAButton
           type="submit"
-          disabled={!isValid || loading}
-          className="w-full h-12 rounded-2xl border border-white/15 bg-white/15 hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-white/15 text-white font-medium transition"
+          disabled={!isValid}
+          loading={loading}
+          className="w-full h-12"
         >
-          {loading ? "Memproses..." : "Daftar"}
-        </button>
+          Daftar
+        </CTAButton>
 
         <div className="pt-2 text-white/70 text-sm">
           Sudah punya akun?{" "}
@@ -237,5 +228,13 @@ export default function RegisterPage() {
         onClose={() => setFailOpen(false)}
       />
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="text-white/50 py-10 text-center">Memuat form...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

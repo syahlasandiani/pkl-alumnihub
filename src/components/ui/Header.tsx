@@ -49,11 +49,11 @@ export default function Header() {
       { key: "alumni", name: "Alumni", section: "alumni" },
       { key: "learning-hub", name: "Learning Hub", section: "learning-hub" },
       { key: "faq", name: "FAQ", section: "faq" },
-      ...(isAuthenticated
+      ...(isAuthenticated && !isAdmin
         ? [{ key: "profile" as NavKey, name: "Profile", section: "profile" as NavKey }]
         : []),
     ],
-    [isAuthenticated]
+    [isAuthenticated, isAdmin]
   );
 
   const [activeSection, setActiveSection] = useState<NavKey>("beranda");

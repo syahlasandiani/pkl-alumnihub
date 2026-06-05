@@ -4,15 +4,18 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AlumniInput, AlumniTextarea } from "@/components/alumni/AlumniField";
+import AlumniAlert from "@/components/ui/AlumniAlert";
 
 interface CreatePostClientProps {
   userId: string;
   authorName: string;
+  isAdmin?: boolean;
 }
 
 export default function CreatePostClient({
   userId,
   authorName,
+  isAdmin,
 }: CreatePostClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -22,7 +25,31 @@ export default function CreatePostClient({
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+
+  const [alert, setAlert] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  function showAlert(
+    type: "success" | "error" | "info",
+    title: string,
+    message: string
+  ) {
+    setAlert({
+      isOpen: true,
+      type,
+      title,
+      message,
+    });
+  }
 
   function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -33,7 +60,11 @@ export default function CreatePostClient({
     }
 
     if (!file.type.startsWith("image/")) {
-      setErrorMsg("Cover harus berupa file gambar.");
+      showAlert(
+        "error",
+        "Format Tidak Valid!",
+        "Cover harus berupa file gambar."
+      );
       e.target.value = "";
       return;
     }
@@ -41,12 +72,15 @@ export default function CreatePostClient({
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      setErrorMsg("Ukuran cover maksimal 5MB.");
+      showAlert(
+        "error",
+        "File Terlalu Besar!",
+        "Ukuran cover maksimal 5MB."
+      );
       e.target.value = "";
       return;
     }
 
-    setErrorMsg("");
     setCoverFile(file);
   }
 
@@ -81,12 +115,15 @@ export default function CreatePostClient({
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
-      setErrorMsg("Judul dan isi konten wajib diisi.");
+      showAlert(
+        "error",
+        "Belum Lengkap!",
+        "Judul dan isi konten wajib diisi."
+      );
       return;
     }
 
     setIsSubmitting(true);
-    setErrorMsg("");
 
     try {
       const coverUrl = await uploadCover();
@@ -103,14 +140,17 @@ export default function CreatePostClient({
 
       if (insertError) throw insertError;
 
-      router.push("/alumni");
-      router.refresh();
+      showAlert(
+        "success",
+        "Berhasil!",
+        "Konten kamu telah berhasil dipublikasikan."
+      );
     } catch (error: any) {
       console.error(error);
-      setErrorMsg(
-        `Gagal mempublikasikan konten: ${
-          error?.message || "Terjadi kesalahan."
-        }`
+      showAlert(
+        "error",
+        "Oops!",
+        error?.message || "Gagal mempublikasikan konten. Silakan coba lagi."
       );
     } finally {
       setIsSubmitting(false);
@@ -118,12 +158,17 @@ export default function CreatePostClient({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {errorMsg && (
-        <div className="rounded-2xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-100">
-          {errorMsg}
-        </div>
-      )}
+    <>
+      <AlumniAlert
+        {...alert}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+        onConfirm={() => {
+          if (alert.type === "success") {
+            window.location.href = isAdmin ? "/admin" : "/alumni";
+          }
+        }}
+      />
+      <form onSubmit={handleSubmit} className="space-y-6">
 
       <div className="space-y-5">
         <AlumniInput
@@ -201,5 +246,6 @@ export default function CreatePostClient({
         </button>
       </div>
     </form>
+    </>
   );
 }

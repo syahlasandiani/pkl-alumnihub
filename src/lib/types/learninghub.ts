@@ -8,5 +8,8 @@ export type HubEvent = {
   dateLabel: string;    // "Sabtu, 15 Maret 2025"
   timeLabel: string;    // "16.00 WIB"
   locationLabel: string; // "Zoom" / "Bandung" / "Jakarta"
+  profiles?: {
+    role: string;
+  };
   // nanti kalau sudah supabase: start_at, end_at, city, meeting_link, dll
 };

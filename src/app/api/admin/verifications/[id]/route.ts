@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { sendVerificationEmail } from "@/lib/email";
+import { revalidatePath } from "next/cache";
 
 export async function PATCH(
   req: Request,
@@ -51,7 +54,7 @@ export async function PATCH(
 
     const { data: verificationRequest } = await supabase
       .from("verification_requests")
-      .select("id, user_id, status")
+      .select("id, user_id, status, full_name")
       .eq("id", id)
       .maybeSingle();
 
@@ -69,12 +72,13 @@ export async function PATCH(
       );
     }
 
-    const nextStatus = action === "APPROVE" ? "VERIFIED" : "REJECTED";
+    const nextRequestStatus = action === "APPROVE" ? "APPROVED" : "REJECTED";
+    const nextProfileStatus = action === "APPROVE" ? "VERIFIED" : "REJECTED";
 
     const { error: requestUpdateError } = await supabase
       .from("verification_requests")
       .update({
-        status: nextStatus,
+        status: nextRequestStatus,
         admin_note: action === "REJECT" ? adminNote : null,
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
@@ -88,11 +92,30 @@ export async function PATCH(
       );
     }
 
-    const { error: profileUpdateError } = await supabase
+    const profileUpdateData: any = {
+      verification_status: nextProfileStatus,
+    };
+
+    if (action === "APPROVE") {
+      profileUpdateData.role = "ALUMNI";
+    }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json(
+        { error: "Server error: SUPABASE_SERVICE_ROLE_KEY belum di-set di .env.local" },
+        { status: 500 }
+      );
+    }
+
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey
+    );
+
+    const { error: profileUpdateError } = await supabaseAdmin
       .from("profiles")
-      .update({
-        verification_status: nextStatus,
-      })
+      .update(profileUpdateData)
       .eq("id", verificationRequest.user_id);
 
     if (profileUpdateError) {
@@ -101,6 +124,32 @@ export async function PATCH(
         { status: 500 }
       );
     }
+
+    // Ambil data profil (email) untuk kirim email notifikasi
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("email, display_name")
+      .eq("id", verificationRequest.user_id)
+      .maybeSingle();
+
+    const userEmail = userProfile?.email || "";
+    const userName = verificationRequest.full_name || userProfile?.display_name || "Alumni";
+
+    if (userEmail) {
+      sendVerificationEmail({
+        toEmail: userEmail,
+        userName: userName,
+        status: nextProfileStatus,
+        adminNote: action === "REJECT" ? adminNote : null,
+      }).catch((err) => {
+        console.error("Gagal mengirim email notifikasi verifikasi:", err);
+      });
+    } else {
+      console.warn(`[Verification Email] Skip sending email because email is empty for user_id: ${verificationRequest.user_id}. Pastikan kolom 'email' di tabel 'profiles' sudah terisi.`);
+    }
+
+    revalidatePath("/", "layout");
+    revalidatePath("/admin/verifications", "page");
 
     return NextResponse.json({
       success: true,

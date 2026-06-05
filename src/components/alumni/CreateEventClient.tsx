@@ -8,11 +8,12 @@ import AlumniAlert from "@/components/ui/AlumniAlert";
 
 interface CreateEventClientProps {
   userId: string;
+  isAdmin?: boolean;
 }
 
 type EventType = "online" | "offline";
 
-export default function CreateEventClient({ userId }: CreateEventClientProps) {
+export default function CreateEventClient({ userId, isAdmin }: CreateEventClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -180,14 +181,13 @@ export default function CreateEventClient({ userId }: CreateEventClientProps) {
         onClose={() => setAlert({ ...alert, isOpen: false })}
         onConfirm={() => {
           if (alert.type === "success") {
-            router.push("/alumni");
-            router.refresh();
+            window.location.href = isAdmin ? "/admin" : "/alumni";
           }
         }}
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-5 rounded-[30px] border border-white/10 bg-white/10 p-8 backdrop-blur-xl">
+        <div className="space-y-5">
           <AlumniInput
             label="Judul Event*"
             placeholder="Masukkan judul event"

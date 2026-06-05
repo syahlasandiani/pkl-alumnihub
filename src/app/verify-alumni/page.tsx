@@ -30,8 +30,8 @@ export default async function VerifyAlumniPage() {
     };
   }
 
-  // admin / verified tidak perlu masuk form verify lagi
-  if (profile.role === "ADMIN" || profile.verification_status === "VERIFIED") {
+  // admin / alumni tidak perlu masuk form verify lagi
+  if (profile.role === "ADMIN" || profile.role === "ALUMNI" || profile.verification_status === "VERIFIED") {
     redirect("/alumni");
   }
 

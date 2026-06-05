@@ -9,6 +9,7 @@ import BackCTA from "@/components/ui/BackCTA";
 import AlumniFilters from "@/components/alumni/AlumniFilters";
 import AlumniCard from "@/components/alumni/AlumniCard";
 import AlumniStatsDonut from "@/components/alumni/AlumniStatsDonut";
+import GlassCard from "@/components/ui/GlassCard";
 import { alumniMock } from "@/lib/data/mock/alumni.mock";
 import type { Alumni } from "@/lib/types/alumni";
 
@@ -249,7 +250,7 @@ export default function AlumniDirectoryClient({ initialData }: AlumniDirectoryCl
 
           <div className="mt-10 grid grid-cols-3 gap-8">
             {/* Donut */}
-            <div className="col-span-2 rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl p-8">
+            <GlassCard className="col-span-2 p-8">
               <div>
                 <h3 className="text-lg font-semibold text-white">
                   Persebaran Alumni (Top Domisili)
@@ -285,10 +286,10 @@ export default function AlumniDirectoryClient({ initialData }: AlumniDirectoryCl
                   </div>
                 ))}
               </div>
-            </div>
+            </GlassCard>
 
             {/* Total */}
-            <div className="col-span-1 rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl p-8">
+            <GlassCard className="col-span-1 p-8">
               <h3 className="text-lg font-semibold text-white">
                 Total Penerima BU
               </h3>
@@ -319,7 +320,7 @@ export default function AlumniDirectoryClient({ initialData }: AlumniDirectoryCl
                   );
                 })}
               </div>
-            </div>
+            </GlassCard>
           </div>
         </div>
       </div>

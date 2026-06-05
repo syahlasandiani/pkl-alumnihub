@@ -78,7 +78,10 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  if (pathname === "/alumni") {
+  if (pathname === "/alumni" || pathname.startsWith("/alumni/profile")) {
+    if (profile?.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
     return res;
   }
 

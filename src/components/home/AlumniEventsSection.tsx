@@ -1,6 +1,8 @@
 import Link from "next/link";
 import SectionHeading from "@/components/shared/SectionHeading";
 import GlassCard from "@/components/ui/GlassCard";
+import GlassPill from "@/components/ui/GlassPill";
+import CTAButton from "@/components/ui/CTAButton";
 import { Calendar, MapPin, Video } from "lucide-react";
 
 interface Event {
@@ -32,6 +34,11 @@ export default function AlumniEventsSection({ events }: { events: any[] }) {
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => (
             <GlassCard key={event.id} className="group relative overflow-hidden p-8 transition hover:bg-white/15">
+              {event.profiles?.role === 'ADMIN' && (
+                <GlassPill as="div" className="absolute top-0 right-0 !rounded-none !rounded-bl-xl !bg-[#7dd3d3] !border-transparent !text-[#0f172a] text-[10px] font-bold uppercase tracking-wider px-3 py-1 z-10 shadow-sm hover:!bg-[#7dd3d3]">
+                  Official
+                </GlassPill>
+              )}
               <div className="absolute top-0 right-0 h-24 w-24 bg-[#7dd3d3]/10 blur-3xl group-hover:bg-[#7dd3d3]/20 transition-all" />
               
               <div className="flex items-center gap-2 mb-4">
@@ -87,13 +94,10 @@ export default function AlumniEventsSection({ events }: { events: any[] }) {
         </div>
 
         <div className="mt-12 flex justify-center">
-          <Link
-            href="/learning-hub/events"
-            className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-3 text-sm font-semibold text-white backdrop-blur-xl transition hover:bg-white/15"
-          >
+          <CTAButton variant="secondary" href="/learning-hub/events" className="group">
             Lihat Semua Event
             <span className="transition-transform group-hover:translate-x-1">→</span>
-          </Link>
+          </CTAButton>
         </div>
       </div>
     </section>

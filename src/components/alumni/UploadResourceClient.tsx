@@ -10,6 +10,7 @@ import { CheckCircle2, FileText, Upload, X } from "lucide-react";
 
 interface UploadResourceClientProps {
   userId: string;
+  isAdmin?: boolean;
 }
 
 type ResourceVisibility = "PUBLIC" | "MEMBERS_ONLY";
@@ -38,6 +39,7 @@ const RESOURCE_CATEGORIES = [
 
 export default function UploadResourceClient({
   userId,
+  isAdmin,
 }: UploadResourceClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -210,14 +212,13 @@ export default function UploadResourceClient({
         onClose={() => setAlert({ ...alert, isOpen: false })}
         onConfirm={() => {
           if (alert.type === "success") {
-            router.push("/alumni");
-            router.refresh();
+            window.location.href = isAdmin ? "/admin" : "/alumni";
           }
         }}
       />
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-6 rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        <div className="space-y-6">
           <AlumniInput
             label="Judul Resource*"
             placeholder="Masukkan judul resource"

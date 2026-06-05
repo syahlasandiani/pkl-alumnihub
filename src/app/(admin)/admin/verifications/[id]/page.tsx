@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import VerificationReviewPanel from "@/components/admin/VerificationReviewPanel";
+import GlassCard from "@/components/ui/GlassCard";
+import CTAButton from "@/components/ui/CTAButton";
 
 type VerificationDetail = {
   id: string;
@@ -39,7 +41,7 @@ function getStatusBadge(status: string) {
     return "border-amber-300/20 bg-amber-300/10 text-amber-100";
   }
 
-  if (status === "VERIFIED") {
+  if (status === "VERIFIED" || status === "APPROVED") {
     return "border-emerald-300/20 bg-emerald-300/10 text-emerald-100";
   }
 
@@ -104,22 +106,16 @@ export default async function AdminVerificationDetailPage({
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div
-        className="fixed inset-0 -z-20 bg-cover bg-center"
-        style={{ backgroundImage: "url(/assets/backgrounds/home-admin.jpg)" }}
-      />
-      <div className="fixed inset-0 -z-10 bg-slate-950/45 backdrop-[1px]" />
-
+    <div className="w-full">
       <section className="px-6 pb-24 pt-8">
         <div className="mx-auto max-w-5xl">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <Link
+            <CTAButton
+              variant="secondary"
               href="/admin/verifications"
-              className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-xl transition hover:bg-white/15 hover:text-white"
             >
               ← Kembali ke Verifications
-            </Link>
+            </CTAButton>
 
             <span
               className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadge(
@@ -130,44 +126,33 @@ export default async function AdminVerificationDetailPage({
             </span>
           </div>
 
-          <section className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl sm:p-8">
+          <GlassCard className="p-6 sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-2xl">
                 <div className="mb-3 inline-flex rounded-full border border-[#7dd3d3]/30 bg-[#7dd3d3]/10 px-3 py-1 text-xs font-semibold text-[#c8ffff]">
                   Detail Verifikasi
                 </div>
 
-                <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+                <h1 className="typo-section-title text-white">
                   {item.full_name}
                 </h1>
-                <p className="mt-2 text-sm leading-relaxed text-white/70 sm:text-base">
+                <p className="mt-2 text-sm leading-relaxed text-white/70 typo-body">
                   Tinjau detail pengajuan alumni, lalu lanjutkan ke proses approve
                   atau reject.
                 </p>
               </div>
 
-              <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/5 p-5">
-                <h2 className="text-lg font-semibold text-white">
-                  Ringkasan Review
-                </h2>
-                <div className="mt-4 space-y-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-                    Pengajuan ke-{item.submission_number}
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-                    Dibuat: {formatDateTime(item.created_at)}
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-                    Direview: {formatDateTime(item.reviewed_at)}
-                  </div>
-                </div>
+              <div className="text-xs text-white/60 space-y-1.5 lg:text-right self-end mt-4 lg:mt-0">
+                <p>Pengajuan ke-{item.submission_number}</p>
+                <p>Dibuat: {formatDateTime(item.created_at)}</p>
+                <p>Direview: {formatDateTime(item.reviewed_at)}</p>
               </div>
             </div>
-          </section>
+          </GlassCard>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
-            <h2 className="text-2xl font-semibold text-white">
+        <GlassCard className="p-6">
+            <h2 className="typo-card-title text-white">
             Data Pengajuan
             </h2>
 
@@ -207,7 +192,7 @@ export default async function AdminVerificationDetailPage({
                 {item.admin_note || "Belum ada catatan admin."}
             </p>
             </div>
-        </div>
+        </GlassCard>
 
         <VerificationReviewPanel
             requestId={item.id}
@@ -217,7 +202,7 @@ export default async function AdminVerificationDetailPage({
         </section>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 

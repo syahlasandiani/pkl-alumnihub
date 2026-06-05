@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { getAlumniProfile, getAlumniExperiences } from "@/lib/data/alumni";
 import { User, Lock } from "lucide-react";
 import BackCTA from "@/components/ui/BackCTA";
+import GlassCard from "@/components/ui/GlassCard";
+import CTAButton from "@/components/ui/CTAButton";
+import ContentHistoryList from "@/components/shared/ContentHistoryList";
 
 const quickActions = [
   {
@@ -55,7 +58,7 @@ export default async function AlumniDashboardPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <BackCTA href="/" label="Kembali ke Beranda" />
           <span className="rounded-full border border-white/10 bg-[#7dd3d3]/20 px-4 py-1.5 text-xs font-bold text-[#7dd3d3]">
-            {isVerified ? "Verified Alumni" : "Akun Publik"}
+            {isVerified ? "Verified" : "Unverified"}
           </span>
         </div>
 
@@ -63,7 +66,7 @@ export default async function AlumniDashboardPage() {
           {/* Kolom Kiri: Profil & Experiences */}
           <div className="space-y-6">
             {/* Kartu Profil Utama */}
-            <section className="rounded-[32px] border border-white/10 bg-white/10 p-8 backdrop-blur-xl">
+            <GlassCard className="p-8">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                   {profile?.avatar_url ? (
@@ -78,7 +81,7 @@ export default async function AlumniDashboardPage() {
                     </div>
                   )}
                   <div className="text-center sm:text-left mt-2 sm:mt-0">
-                    <h1 className="text-3xl font-semibold tracking-tight text-white">{displayName}</h1>
+                    <h1 className="typo-section-title text-white">{displayName}</h1>
                     <p className="text-sm text-white/70 mt-2">Email: {userEmail}</p>
                     <p className="text-sm text-white/70 mt-0.5">
                       Status Verifikasi: <span className="font-semibold text-white">{verificationStatusText}</span>
@@ -86,12 +89,13 @@ export default async function AlumniDashboardPage() {
                   </div>
                 </div>
 
-                <Link
+                <CTAButton
+                  variant="secondary"
                   href="/alumni/profile"
-                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 whitespace-nowrap"
+                  className="whitespace-nowrap"
                 >
                   Edit Profil
-                </Link>
+                </CTAButton>
               </div>
 
               <div className="mt-10">
@@ -107,12 +111,12 @@ export default async function AlumniDashboardPage() {
                   </div>
                 </div>
               </div>
-            </section>
+            </GlassCard>
 
             {/* Kartu Bawah Kiri (Kondisional) */}
             {isVerified ? (
-              <section className="rounded-[32px] border border-white/10 bg-white/10 p-8 backdrop-blur-xl">
-                <h2 className="text-xl font-bold text-white mb-4">Pengalaman & Pekerjaan</h2>
+              <GlassCard className="p-8">
+                <h2 className="typo-card-title text-white mb-4">Pengalaman & Pekerjaan</h2>
                 {experiences.length > 0 ? (
                   <div className="space-y-4">
                     {experiences.map((exp) => (
@@ -136,21 +140,20 @@ export default async function AlumniDashboardPage() {
                     </Link>
                   </div>
                 )}
-              </section>
+              </GlassCard>
             ) : (
-              <section className="rounded-[32px] border border-white/10 bg-white/10 p-8 backdrop-blur-xl">
-                <h2 className="text-xl font-bold text-white mb-2">Ingin terhubung dengan alumni lain?</h2>
+              <GlassCard className="p-8">
+                <h2 className="typo-card-title text-white mb-2">Ingin terhubung dengan alumni lain?</h2>
                 <p className="text-sm text-white/60 mb-6 leading-relaxed max-w-xl">
                   Akun kamu belum memiliki akses fitur penuh Alumni Hub (seperti forum, sharing resource, dan posting). Jika
                   kamu adalah alumni, ajukan verifikasi sekarang.
                 </p>
-                <Link
+                <CTAButton
                   href="/verify-alumni"
-                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-white/90"
                 >
                   Gabung sebagai Alumni
-                </Link>
-              </section>
+                </CTAButton>
+              </GlassCard>
             )}
           </div>
 
@@ -162,23 +165,25 @@ export default async function AlumniDashboardPage() {
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="group relative flex flex-col overflow-hidden rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition hover:bg-white/10 hover:translate-y-[-4px]"
+                    className="group block transition hover:translate-y-[-4px]"
                   >
-                    <h3 className="text-xl font-bold text-white group-hover:text-[#7dd3d3] transition-colors">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-white/50">{item.desc}</p>
-                    <div className="mt-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40 group-hover:text-white transition-colors">
-                      BUKA
-                      <span className="transition-transform group-hover:translate-x-1">→</span>
-                    </div>
+                    <GlassCard className="flex flex-col p-6 bg-white/5 hover:bg-white/10 transition-colors h-full">
+                      <h3 className="text-xl font-bold text-white group-hover:text-[#7dd3d3] transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed text-white/50">{item.desc}</p>
+                      <div className="mt-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40 group-hover:text-white transition-colors">
+                        BUKA
+                        <span className="transition-transform group-hover:translate-x-1">→</span>
+                      </div>
+                    </GlassCard>
                   </Link>
                 );
               } else {
                 return (
-                  <div
+                  <GlassCard
                     key={item.title}
-                    className="group relative flex flex-col overflow-hidden rounded-[32px] border border-white/5 bg-white/5 p-6 backdrop-blur-xl opacity-80"
+                    className="group flex flex-col p-6 bg-white/5 opacity-60"
                   >
                     <h3 className="text-xl font-bold text-white/50 flex items-center gap-2">
                       {item.title}
@@ -188,12 +193,14 @@ export default async function AlumniDashboardPage() {
                     <div className="mt-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/20">
                       BUTUH VERIFIED
                     </div>
-                  </div>
+                  </GlassCard>
                 );
               }
             })}
           </div>
         </div>
+
+        <ContentHistoryList userId={user.id} title="Riwayat Konten Saya" />
       </div>
     </section>
   );

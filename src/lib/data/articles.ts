@@ -10,6 +10,7 @@ export interface AlumniArticle {
   published_at: string;
   created_at?: string;
   status?: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "HIDDEN";
+  profiles?: { role: string } | null;
 }
 
 export async function getArticles() {
@@ -18,7 +19,7 @@ export async function getArticles() {
 
   const { data, error } = await supabase
     .from("articles")
-    .select("*")
+    .select("*, profiles:creator_id(role)")
     .eq("status", "PUBLISHED")
     .lte("published_at", now)
     .order("published_at", { ascending: false });
@@ -36,7 +37,7 @@ export async function getArticleDetail(id: string) {
 
   const { data, error } = await supabase
     .from("articles")
-    .select("*")
+    .select("*, profiles:creator_id(role)")
     .eq("id", id)
     .eq("status", "PUBLISHED")
     .single();

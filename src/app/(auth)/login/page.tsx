@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import BackCTA from "@/components/ui/BackCTA";
 import GlassPill from "@/components/ui/GlassPill";
 import GlassDialog from "@/components/ui/GlassDialog";
+import CTAButton from "@/components/ui/CTAButton";
 import { createClient } from "@/lib/supabase/client"; // ✅ ganti ini
 
 const inputClass =
@@ -39,7 +40,9 @@ function fallbackName(email?: string | null) {
     .join(" ");
 }
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginForm() {
   const sp = useSearchParams();
   const router = useRouter();
   const next = sp.get("next") || "/";
@@ -153,13 +156,14 @@ export default function LoginPage() {
           </div>
         </Field>
 
-        <button
+        <CTAButton
           type="submit"
-          disabled={!isValid || loading}
-          className="w-full h-12 rounded-2xl border border-white/15 bg-white/15 hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-white/15 text-white font-medium transition"
+          disabled={!isValid}
+          loading={loading}
+          className="w-full h-12"
         >
-          {loading ? "Memproses..." : "Masuk"}
-        </button>
+          Masuk
+        </CTAButton>
 
         <div className="pt-2 text-white/70 text-sm">
           Belum punya akun?{" "}
@@ -194,5 +198,13 @@ export default function LoginPage() {
         onClose={() => setFailOpen(false)}
       />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-white/50 py-10 text-center">Memuat form...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

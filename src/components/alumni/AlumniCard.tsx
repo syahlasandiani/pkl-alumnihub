@@ -27,16 +27,16 @@ export default function AlumniCard({ alumni }: { alumni: Alumni }) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="font-semibold truncate">
+            <div className="typo-card-title truncate">
               {alumni.full_name}
             </div>
 
-            <div className="text-sm text-white/75 truncate">
+            <div className="typo-body text-white/75 truncate">
               {alumni.degree_level} • {alumni.intake_year} • {alumni.location || "-"}
             </div>
 
             {alumni.headline && (
-              <div className="text-sm text-white/70 truncate mt-0.5">
+              <div className="typo-small text-white/70 truncate mt-0.5">
                 {alumni.headline}
               </div>
             )}

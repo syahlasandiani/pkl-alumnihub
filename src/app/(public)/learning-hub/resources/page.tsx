@@ -1,8 +1,10 @@
 import { getResources } from "@/lib/data/resources";
 import GlassCard from "@/components/ui/GlassCard";
 import SectionHeading from "@/components/shared/SectionHeading";
-import { FileText, Download, FileArchive, File as FileIcon, Search } from "lucide-react";
+import { FileText, Download, FileArchive, File as FileIcon } from "lucide-react";
 import BackCTA from "@/components/ui/BackCTA";
+import SearchInput from "@/components/ui/SearchInput";
+import GlassPill from "@/components/ui/GlassPill";
 
 export default async function ResourcesPage() {
   const resources = await getResources();
@@ -36,18 +38,17 @@ export default async function ResourcesPage() {
         {/* Filter & Search Bar */}
         <div className="mt-10 mb-12 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-            <input 
-              type="text" 
-              placeholder="Cari resource..." 
-              className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white outline-none backdrop-blur-xl focus:border-[#7dd3d3]/50 transition-colors"
-            />
+            <SearchInput placeholder="Cari resource..." className="w-full py-3" />
           </div>
           <div className="flex gap-2">
              {['Semua', 'PDF', 'Doc', 'Zip'].map(tab => (
-               <button key={tab} className={`px-5 py-2 rounded-xl text-xs font-bold transition ${tab === 'Semua' ? 'bg-[#7dd3d3] text-[#0f172a]' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
+               <GlassPill 
+                 key={tab} 
+                 active={tab === 'Semua'}
+                 className={tab === 'Semua' ? '!bg-[#7dd3d3] !text-[#0f172a] !border-transparent font-bold' : ''}
+               >
                  {tab}
-               </button>
+               </GlassPill>
              ))}
           </div>
         </div>
@@ -55,8 +56,13 @@ export default async function ResourcesPage() {
         {resources.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {resources.map((res) => (
-              <GlassCard key={res.id} className="group flex flex-col p-7 transition hover:bg-white/10">
-                <div className="mb-6 flex items-start justify-between">
+              <GlassCard key={res.id} className="group flex flex-col p-7 transition hover:bg-white/10 relative overflow-hidden">
+                {res.profiles?.role === "ADMIN" && (
+                  <GlassPill as="div" className="absolute top-0 right-0 !rounded-none !rounded-bl-xl !bg-[#7dd3d3] !border-transparent !text-[#0f172a] text-[10px] font-bold uppercase tracking-wider px-3 py-1 z-10 shadow-sm hover:!bg-[#7dd3d3]">
+                    Official
+                  </GlassPill>
+                )}
+                <div className="mb-6 flex items-start justify-between mt-2">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 border border-white/10 transition-transform group-hover:scale-110">
                     {getFileIcon(res.file_type)}
                   </div>

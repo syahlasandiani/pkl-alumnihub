@@ -22,6 +22,15 @@ export default async function AlumniProfilePage() {
     .eq("user_id", user.id)
     .single();
 
+  // Fetch base profile to know verification status
+  const { data: baseProfile } = await supabase
+    .from("profiles")
+    .select("verification_status")
+    .eq("id", user.id)
+    .single();
+  
+  const isVerified = baseProfile?.verification_status === "VERIFIED";
+
   // Fetch existing experiences
   const { data: experiences } = await supabase
     .from("alumni_experiences")
@@ -66,6 +75,7 @@ export default async function AlumniProfilePage() {
             userId={user.id}
             profile={profile || defaultProfile}
             experiences={experiences || []}
+            isVerified={isVerified}
           />
         </div>
       </div>

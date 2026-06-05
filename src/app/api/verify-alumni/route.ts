@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
             role: "USER",
             account_status: "ACTIVE",
             verification_status: "NONE",
+            email: user.email,
           })
           .select("role, verification_status, account_status")
           .single();
@@ -99,7 +101,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (profile.role === "ADMIN" || profile.verification_status === "VERIFIED") {
+    if (profile.role === "ADMIN" || profile.role === "ALUMNI" || profile.verification_status === "VERIFIED") {
       return NextResponse.json(
         { error: "Akun ini tidak perlu mengajukan verifikasi alumni." },
         { status: 400 }
@@ -186,6 +188,15 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    // Kirim notifikasi email secara asinkron
+    sendVerificationEmail({
+      toEmail: user.email || "",
+      userName: fullName,
+      status: "PENDING",
+    }).catch((err) => {
+      console.error("Gagal mengirim email verifikasi diajukan:", err);
+    });
 
     return NextResponse.json({
       success: true,

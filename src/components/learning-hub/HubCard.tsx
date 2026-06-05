@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GlassCard from "@/components/ui/GlassCard";
 import { LucideIcon } from "lucide-react";
 
 type Props = {
@@ -15,10 +16,8 @@ export default function HubCard({
   icon: Icon,
 }: Props) {
   return (
-    <Link
-      href={href}
-      className="group rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-6 transition hover:bg-white/15"
-    >
+    <Link href={href} className="group block">
+      <GlassCard className="p-6 transition hover:bg-white/15">
       {/* ICON + TITLE */}
       <div className="flex items-start gap-4">
         {/* PERFECT CIRCLE WRAPPER */}
@@ -45,6 +44,7 @@ export default function HubCard({
           →
         </span>
       </div>
+      </GlassCard>
     </Link>
   );
 }

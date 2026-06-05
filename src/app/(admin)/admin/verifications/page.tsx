@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
+import GlassCard from "@/components/ui/GlassCard";
+import CTAButton from "@/components/ui/CTAButton";
 
 type VerificationRequestRow = {
   id: string;
@@ -30,7 +32,7 @@ function getStatusBadge(status: string) {
     return "border-amber-300/20 bg-amber-300/10 text-amber-100";
   }
 
-  if (status === "VERIFIED") {
+  if (status === "VERIFIED" || status === "APPROVED") {
     return "border-emerald-300/20 bg-emerald-300/10 text-emerald-100";
   }
 
@@ -68,77 +70,59 @@ export default async function AdminVerificationsPage() {
   ).length;
 
   return (
-    <main className="relative min-h-screen">
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundImage: "url(/assets/backgrounds/home-admin.jpg)" }}
-      />
-      <div className="fixed inset-0 -z-10 bg-black/35" />
-
+    <div className="w-full">
       <section className="px-6 pb-24 pt-8">
         <div className="mx-auto max-w-6xl">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <Link
+            <CTAButton
+              variant="secondary"
               href="/admin"
-              className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-xl transition hover:bg-white/15 hover:text-white"
             >
               ← Kembali ke Dashboard Admin
-            </Link>
+            </CTAButton>
 
             <span className="rounded-full border border-[#7dd3d3]/30 bg-[#7dd3d3]/10 px-3 py-1 text-xs font-semibold text-[#c8ffff]">
               Admin Verifications
             </span>
           </div>
 
-          <section className="rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl sm:p-8">
+          <GlassCard className="p-6 sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-2xl">
                 <div className="mb-3 inline-flex rounded-full border border-[#7dd3d3]/30 bg-[#7dd3d3]/10 px-3 py-1 text-xs font-semibold text-[#c8ffff]">
                   Verifikasi Alumni
                 </div>
 
-                <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+                <h1 className="typo-section-title text-white">
                   Daftar Pengajuan Verifikasi
                 </h1>
-                <p className="mt-2 text-sm leading-relaxed text-white/70 sm:text-base">
+                <p className="mt-2 text-sm leading-relaxed text-white/70 typo-body">
                   Tinjau pengajuan alumni, cek status terbaru, dan lanjutkan ke
                   detail review.
                 </p>
               </div>
 
-              <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/5 p-5">
-                <h2 className="text-lg font-semibold text-white">
+              <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-white/5 p-5 text-center">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-white/45">
                   Ringkasan Cepat
                 </h2>
-
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-2xl font-semibold text-white">
-                      {verificationRequests.length}
-                    </p>
-                    <p className="mt-1 text-sm text-white/60">
-                      Total Pengajuan
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-2xl font-semibold text-white">
-                      {pendingCount}
-                    </p>
-                    <p className="mt-1 text-sm text-white/60">Pending</p>
-                  </div>
+                <div className="mt-3">
+                  <p className="text-4xl font-extrabold text-[#c8ffff]">
+                    {pendingCount}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">Pengajuan Pending</p>
                 </div>
               </div>
             </div>
-          </section>
+          </GlassCard>
 
-          <section className="mt-6 rounded-[32px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl">
+          <GlassCard className="mt-6 p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="typo-card-title text-white">
                   Antrian Pengajuan
                 </h2>
-                <p className="mt-1 text-sm text-white/70">
+                <p className="mt-1 text-sm text-white/70 typo-body">
                   Klik salah satu item untuk melihat detail verifikasi.
                 </p>
               </div>
@@ -208,9 +192,9 @@ export default async function AdminVerificationsPage() {
                 ))}
               </div>
             ) : null}
-          </section>
+          </GlassCard>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

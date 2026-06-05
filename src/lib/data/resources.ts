@@ -15,6 +15,7 @@ export interface AlumniResource {
   category?: string | null;
   status?: ResourceStatus;
   created_at?: string;
+  profiles?: { role: string } | null;
 }
 
 export async function getResources() {
@@ -22,7 +23,7 @@ export async function getResources() {
 
   const { data, error } = await supabase
     .from("resources")
-    .select("*")
+    .select("*, profiles:creator_id(role)")
     .eq("status", "PUBLISHED")
     .eq("visibility", "PUBLIC")
     .order("created_at", { ascending: false });
