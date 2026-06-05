@@ -5,7 +5,9 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
+  useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { Session, User as SupabaseUser } from "@supabase/supabase-js";
@@ -74,30 +76,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
 
-  async function enrichWithProfile(baseUser: AppUser | null) {
-    if (!baseUser) return null;
+  // Cache to avoid redundant profile fetches for same user id
+  const profileCacheRef = useRef<{ id: string; data: Partial<AppUser> } | null>(null);
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("role, account_status, verification_status, display_name")
-      .eq("id", baseUser.id)
-      .maybeSingle();
+  const enrichWithProfile = useCallback(
+    async (baseUser: AppUser | null): Promise<AppUser | null> => {
+      if (!baseUser) return null;
 
-    if (error || !data) {
-      return baseUser;
-    }
+      // Return cached profile if same user
+      if (profileCacheRef.current?.id === baseUser.id) {
+        return { ...baseUser, ...profileCacheRef.current.data };
+      }
 
-    return {
-      ...baseUser,
-      username: data.display_name?.trim() || baseUser.username,
-      role: (data.role as UserRole) ?? "USER",
-      account_status: (data.account_status as AccountStatus) ?? "ACTIVE",
-      verification_status:
-        (data.verification_status as VerificationStatus) ?? "NONE",
-    };
-  }
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role, account_status, verification_status, display_name")
+        .eq("id", baseUser.id)
+        .maybeSingle();
 
-  async function refresh() {
+      if (error || !data) {
+        return baseUser;
+      }
+
+      const profileData: Partial<AppUser> = {
+        username: data.display_name?.trim() || baseUser.username,
+        role: (data.role as UserRole) ?? "USER",
+        account_status: (data.account_status as AccountStatus) ?? "ACTIVE",
+        verification_status:
+          (data.verification_status as VerificationStatus) ?? "NONE",
+      };
+
+      // Cache it
+      profileCacheRef.current = { id: baseUser.id, data: profileData };
+
+      return { ...baseUser, ...profileData };
+    },
+    [supabase]
+  );
+
+  const refresh = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     const currentSession = data.session ?? null;
 
@@ -107,19 +124,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const enriched = await enrichWithProfile(base);
 
     setUser(enriched);
-  }
+  }, [supabase, enrichWithProfile]);
 
   useEffect(() => {
+    // Initial load — use getSession() (fast, no network call)
     refresh();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
-      setSession(s ?? null);
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      async (event, s) => {
+        setSession(s ?? null);
 
-      const base = mapSupabaseUser(s?.user ?? null);
-      const enriched = await enrichWithProfile(base);
+        // On sign out, clear immediately — no need to fetch profile
+        if (event === "SIGNED_OUT" || !s?.user) {
+          setUser(null);
+          profileCacheRef.current = null;
+          return;
+        }
 
-      setUser(enriched);
-    });
+        // Invalidate cache on sign in (new user)
+        if (event === "SIGNED_IN") {
+          profileCacheRef.current = null;
+        }
+
+        const base = mapSupabaseUser(s.user);
+        const enriched = await enrichWithProfile(base);
+        setUser(enriched);
+      }
+    );
 
     return () => {
       sub.subscription.unsubscribe();
@@ -129,15 +160,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAuthenticated = !!session;
 
-  async function logout() {
+  const logout = useCallback(async () => {
+    // Clear state immediately for instant UI feedback
     setSession(null);
     setUser(null);
+    profileCacheRef.current = null;
 
     await supabase.auth.signOut();
 
     router.push("/");
     router.refresh();
-  }
+  }, [supabase, router]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -147,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refresh,
     }),
-    [isAuthenticated, user, session]
+    [isAuthenticated, user, session, logout, refresh]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

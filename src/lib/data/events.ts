@@ -19,34 +19,57 @@ export interface AlumniEvent {
 export async function getEvents() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: events, error } = await supabase
     .from("events")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("status", "PUBLISHED")
     .order("event_date", { ascending: true });
 
   if (error) {
-    console.error("Error fetching events:", error);
+    console.error("Error fetching events:", error.message, error.details, error.hint);
     return [];
   }
 
-  return data;
+  if (events && events.length > 0) {
+    const creatorIds = Array.from(new Set(events.map(e => e.creator_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, role")
+      .in("id", creatorIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    return events.map(e => ({
+      ...e,
+      profiles: profileMap.get(e.creator_id) || null
+    }));
+  }
+
+  return events || [];
 }
 
 export async function getEventDetail(id: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: event, error } = await supabase
     .from("events")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("id", id)
     .eq("status", "PUBLISHED")
     .single();
 
-  if (error) {
+  if (error || !event) {
     console.error("Error fetching event detail:", error);
     return null;
   }
 
-  return data;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .eq("id", event.creator_id)
+    .single();
+
+  return {
+    ...event,
+    profiles: profile || null
+  };
 }

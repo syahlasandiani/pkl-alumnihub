@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, Calendar, Paperclip, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Calendar, Paperclip, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
+import GlassConfirmDialog from "@/components/ui/GlassConfirmDialog";
+import { deleteArticleAction, deleteEventAction, deleteResourceAction } from "@/app/(alumni)/alumni/actions";
+import { useRouter } from "next/navigation";
 
 type TabType = "events" | "articles" | "resources";
 
@@ -13,15 +17,74 @@ interface HistoryTabsClientProps {
 
 export default function HistoryTabsClient({ articles, events, resources }: HistoryTabsClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>("events");
+  const router = useRouter();
+
+  const [localArticles, setLocalArticles] = useState(articles);
+  const [localEvents, setLocalEvents] = useState(events);
+  const [localResources, setLocalResources] = useState(resources);
+
+  useEffect(() => {
+    setLocalArticles(articles);
+  }, [articles]);
+
+  useEffect(() => {
+    setLocalEvents(events);
+  }, [events]);
+
+  useEffect(() => {
+    setLocalResources(resources);
+  }, [resources]);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<{ id: string; type: TabType; title: string } | null>(null);
 
   const tabs = [
-    { id: "events", label: "Event", icon: Calendar, count: events.length },
-    { id: "articles", label: "Konten", icon: FileText, count: articles.length },
-    { id: "resources", label: "Resource", icon: Paperclip, count: resources.length },
+    { id: "events", label: "Event", icon: Calendar, count: localEvents.length },
+    { id: "articles", label: "Konten", icon: FileText, count: localArticles.length },
+    { id: "resources", label: "Resource", icon: Paperclip, count: localResources.length },
   ];
+
+  const handleDeleteClick = (type: TabType, id: string, title: string) => {
+    setDeleteItem({ id, type, title });
+    setDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      if (deleteItem.type === "articles") {
+        await deleteArticleAction(deleteItem.id);
+        setLocalArticles(prev => prev.filter(item => item.id !== deleteItem.id));
+      } else if (deleteItem.type === "events") {
+        await deleteEventAction(deleteItem.id);
+        setLocalEvents(prev => prev.filter(item => item.id !== deleteItem.id));
+      } else if (deleteItem.type === "resources") {
+        await deleteResourceAction(deleteItem.id);
+        setLocalResources(prev => prev.filter(item => item.id !== deleteItem.id));
+      }
+
+      router.refresh();
+    } catch (err: any) {
+      console.error("Error deleting item:", err);
+      alert(`Gagal menghapus item: ${err?.message || err}`);
+    } finally {
+      setDeleteOpen(false);
+      setDeleteItem(null);
+    }
+  };
 
   return (
     <div>
+      <GlassConfirmDialog
+        open={deleteOpen}
+        title="Konfirmasi Hapus"
+        message={`Apakah Anda yakin ingin menghapus postingan "${deleteItem?.title}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
+
       {/* Tabs */}
       <div className="flex gap-4 border-b border-white/10 mb-6 pb-2 overflow-x-auto custom-scrollbar">
         {tabs.map((tab) => {
@@ -51,10 +114,10 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
       <div className="min-h-[200px]">
         {activeTab === "events" && (
           <div className="space-y-4">
-            {events.length === 0 ? (
+            {localEvents.length === 0 ? (
               <p className="text-sm text-white/40 text-center py-8">Belum ada Event yang dibuat.</p>
             ) : (
-              events.map((event) => (
+              localEvents.map((event) => (
                 <div key={event.id} className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
                   <div>
                     <h4 className="font-semibold text-white">{event.title}</h4>
@@ -62,9 +125,25 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
                       {new Date(event.created_at).toLocaleDateString("id-ID")} • {event.type === "online" ? "Online" : "Offline"}
                     </p>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-1 bg-[#7dd3d3]/20 text-[#7dd3d3] rounded-md">
-                    {event.status || "PUBLISHED"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/alumni/edit-event/${event.id}`}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#7dd3d3] transition-colors"
+                      title="Edit Event"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteClick("events", event.id, event.title)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-red-400 transition-colors"
+                      title="Hapus Event"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <span className="text-[10px] font-bold px-2 py-1 bg-[#7dd3d3]/20 text-[#7dd3d3] rounded-md">
+                      {event.status || "PUBLISHED"}
+                    </span>
+                  </div>
                 </div>
               ))
             )}
@@ -73,10 +152,10 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
 
         {activeTab === "articles" && (
           <div className="space-y-4">
-            {articles.length === 0 ? (
+            {localArticles.length === 0 ? (
               <p className="text-sm text-white/40 text-center py-8">Belum ada Konten yang dibuat.</p>
             ) : (
-              articles.map((article) => (
+              localArticles.map((article) => (
                 <div key={article.id} className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
                   <div>
                     <h4 className="font-semibold text-white">{article.title}</h4>
@@ -84,9 +163,25 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
                       {new Date(article.created_at).toLocaleDateString("id-ID")}
                     </p>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-1 bg-[#7dd3d3]/20 text-[#7dd3d3] rounded-md">
-                    {article.status || "PUBLISHED"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/alumni/edit-post/${article.id}`}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#7dd3d3] transition-colors"
+                      title="Edit Konten"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteClick("articles", article.id, article.title)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-red-400 transition-colors"
+                      title="Hapus Konten"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <span className="text-[10px] font-bold px-2 py-1 bg-[#7dd3d3]/20 text-[#7dd3d3] rounded-md">
+                      {article.status || "PUBLISHED"}
+                    </span>
+                  </div>
                 </div>
               ))
             )}
@@ -95,10 +190,10 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
 
         {activeTab === "resources" && (
           <div className="space-y-4">
-            {resources.length === 0 ? (
+            {localResources.length === 0 ? (
               <p className="text-sm text-white/40 text-center py-8">Belum ada Resource yang diupload.</p>
             ) : (
-              resources.map((resource) => (
+              localResources.map((resource) => (
                 <div key={resource.id} className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
                   <div>
                     <h4 className="font-semibold text-white">{resource.title}</h4>
@@ -108,15 +203,31 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
                       <span className="uppercase">{resource.file_type}</span>
                     </p>
                   </div>
-                  {resource.file_url ? (
-                    <a href={resource.file_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-[#7dd3d3] hover:text-white transition">
-                      Buka <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <span className="text-[10px] font-bold px-2 py-1 bg-white/10 text-white/60 rounded-md">
-                      File Hilang
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/alumni/edit-resource/${resource.id}`}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#7dd3d3] transition-colors"
+                      title="Edit Resource"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteClick("resources", resource.id, resource.title)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-red-400 transition-colors"
+                      title="Hapus Resource"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    {resource.file_url ? (
+                      <a href={resource.file_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-[#7dd3d3] hover:text-white transition">
+                        Buka <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-1 bg-white/10 text-white/60 rounded-md">
+                        File Hilang
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))
             )}
@@ -126,3 +237,4 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
     </div>
   );
 }
+

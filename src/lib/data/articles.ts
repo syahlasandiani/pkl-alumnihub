@@ -17,35 +17,58 @@ export async function getArticles() {
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const { data, error } = await supabase
+  const { data: articles, error } = await supabase
     .from("articles")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("status", "PUBLISHED")
     .lte("published_at", now)
     .order("published_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching articles:", error);
+    console.error("Error fetching articles:", error.message, error.details, error.hint);
     return [];
   }
 
-  return data;
+  if (articles && articles.length > 0) {
+    const creatorIds = Array.from(new Set(articles.map(a => a.creator_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, role")
+      .in("id", creatorIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    return articles.map(a => ({
+      ...a,
+      profiles: profileMap.get(a.creator_id) || null
+    }));
+  }
+
+  return articles || [];
 }
 
 export async function getArticleDetail(id: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: article, error } = await supabase
     .from("articles")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("id", id)
     .eq("status", "PUBLISHED")
     .single();
 
-  if (error) {
+  if (error || !article) {
     console.error("Error fetching article detail:", error);
     return null;
   }
 
-  return data;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .eq("id", article.creator_id)
+    .single();
+
+  return {
+    ...article,
+    profiles: profile || null
+  };
 }

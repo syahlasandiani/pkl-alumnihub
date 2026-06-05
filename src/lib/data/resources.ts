@@ -21,9 +21,9 @@ export interface AlumniResource {
 export async function getResources() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: resources, error } = await supabase
     .from("resources")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("status", "PUBLISHED")
     .eq("visibility", "PUBLIC")
     .order("created_at", { ascending: false });
@@ -33,7 +33,21 @@ export async function getResources() {
     return [];
   }
 
-  return data;
+  if (resources && resources.length > 0) {
+    const creatorIds = Array.from(new Set(resources.map(r => r.creator_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, role")
+      .in("id", creatorIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    return resources.map(r => ({
+      ...r,
+      profiles: profileMap.get(r.creator_id) || null
+    }));
+  }
+
+  return resources || [];
 }
 
 export async function createResource(

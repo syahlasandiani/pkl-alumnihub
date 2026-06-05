@@ -3,6 +3,12 @@ import { createServerClient } from "@supabase/ssr";
 
 export default async function middleware(req: NextRequest) {
   const res = NextResponse.next();
+  const pathname = req.nextUrl.pathname;
+
+  // Public routes — skip auth entirely
+  if (pathname === "/login" || pathname === "/register") {
+    return res;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,11 +27,12 @@ export default async function middleware(req: NextRequest) {
     }
   );
 
+  // Use getSession() — fast, JWT-only, no network call to Supabase Auth
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  const pathname = req.nextUrl.pathname;
+  const user = session?.user ?? null;
 
   const redirectToLogin = () => {
     const url = req.nextUrl.clone();
@@ -47,29 +54,22 @@ export default async function middleware(req: NextRequest) {
     pathname.startsWith("/alumni") ||
     pathname.startsWith("/verify-alumni");
 
-  let profile:
-    | {
-      role?: string | null;
-      verification_status?: string | null;
-      account_status?: string | null;
-    }
-    | null
-    | undefined;
+  if (!needsProfileCheck) {
+    return res;
+  }
 
-  if (needsProfileCheck) {
-    if (!user) return redirectToLogin();
+  // All routes below require auth
+  if (!user) return redirectToLogin();
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, verification_status, account_status")
-      .eq("id", user.id)
-      .single();
+  // Single query for profile — only when needed
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, verification_status, account_status")
+    .eq("id", user.id)
+    .single();
 
-    profile = data;
-
-    if (profile && profile.account_status && profile.account_status !== "ACTIVE") {
-      return redirectHome();
-    }
+  if (profile && profile.account_status && profile.account_status !== "ACTIVE") {
+    return redirectHome();
   }
 
   if (pathname.startsWith("/admin")) {

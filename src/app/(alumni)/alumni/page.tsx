@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -200,7 +202,7 @@ export default async function AlumniDashboardPage() {
           </div>
         </div>
 
-        <ContentHistoryList userId={user.id} title="Riwayat Konten Saya" />
+        <ContentHistoryList userId={user.id} title="Riwayat Konten Saya" limit={true} />
       </div>
     </section>
   );

@@ -72,7 +72,7 @@ function LoginForm() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -99,13 +99,9 @@ function LoginForm() {
         return;
       }
 
-      // ✅ penting: refresh router agar server component kebaca cookie baru
-      router.refresh();
-
-      const { data } = await supabase.auth.getUser();
-      const u = data?.user;
-
-      const meta: any = u?.user_metadata || {};
+      // Use user data from signIn response directly — no extra network call
+      const u = signInData?.user;
+      const meta: Record<string, unknown> = u?.user_metadata || {};
       const name =
         (meta.display_name as string | undefined)?.trim() ||
         (meta.full_name as string | undefined)?.trim() ||
@@ -185,7 +181,7 @@ function LoginForm() {
         onClose={() => {
           setSuccessOpen(false);
           router.push(next);
-          router.refresh(); // ✅ biar server state ikut kebaca
+          router.refresh();
         }}
       />
 
