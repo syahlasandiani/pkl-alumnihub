@@ -23,17 +23,28 @@ export async function getResources() {
 
   const { data, error } = await supabase
     .from("resources")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("status", "PUBLISHED")
     .eq("visibility", "PUBLIC")
     .order("created_at", { ascending: false });
 
-  if (error) {
+  if (error || !data) {
     console.error("Error fetching resources:", error);
     return [];
   }
 
-  return data;
+  const creatorIds = data.map(r => r.creator_id).filter(Boolean);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .in("id", creatorIds);
+    
+  const roleMap = new Map(profiles?.map(p => [p.id, p.role]) || []);
+
+  return data.map(r => ({
+    ...r,
+    profiles: { role: roleMap.get(r.creator_id) || "USER" }
+  }));
 }
 
 export async function createResource(

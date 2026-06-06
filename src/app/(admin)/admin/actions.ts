@@ -60,20 +60,28 @@ export async function getAdminUsers() {
 
 export async function getAdminEvents() {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: events, error } = await supabase
     .from("events")
-    .select("id, title, type, status, created_at, profiles:creator_id(display_name)")
+    .select("id, title, type, status, created_at, creator_id")
     .order("created_at", { ascending: false })
     .limit(50);
 
-  if (error) return [];
+  if (error || !events) return [];
   
-  return data.map((d: any) => ({
+  const creatorIds = events.map(e => e.creator_id).filter(Boolean);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", creatorIds);
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) || []);
+
+  return events.map((d: any) => ({
     id: d.id,
     title: d.title,
     type: d.type,
     status: d.status,
-    creator_name: d.profiles?.display_name || "Unknown",
+    creator_name: profileMap.get(d.creator_id) || "Unknown",
     created_at: d.created_at
   }));
 }
@@ -99,20 +107,28 @@ export async function getAdminArticles() {
 
 export async function getAdminResources() {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: resources, error } = await supabase
     .from("resources")
-    .select("id, title, file_url, status, created_at, profiles:creator_id(display_name)")
+    .select("id, title, file_url, status, created_at, creator_id")
     .order("created_at", { ascending: false })
     .limit(50);
 
-  if (error) return [];
+  if (error || !resources) return [];
   
-  return data.map((d: any) => ({
+  const creatorIds = resources.map(r => r.creator_id).filter(Boolean);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", creatorIds);
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) || []);
+
+  return resources.map((d: any) => ({
     id: d.id,
     title: d.title,
     file_url: d.file_url,
     status: d.status,
-    creator_name: d.profiles?.display_name || "Unknown",
+    creator_name: profileMap.get(d.creator_id) || "Unknown",
     created_at: d.created_at
   }));
 }

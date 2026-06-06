@@ -19,17 +19,28 @@ export async function getArticles() {
 
   const { data, error } = await supabase
     .from("articles")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("status", "PUBLISHED")
     .lte("published_at", now)
     .order("published_at", { ascending: false });
 
-  if (error) {
+  if (error || !data) {
     console.error("Error fetching articles:", error);
     return [];
   }
 
-  return data;
+  const creatorIds = data.map(a => a.creator_id).filter(Boolean);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .in("id", creatorIds);
+    
+  const roleMap = new Map(profiles?.map(p => [p.id, p.role]) || []);
+
+  return data.map(a => ({
+    ...a,
+    profiles: { role: roleMap.get(a.creator_id) || "USER" }
+  }));
 }
 
 export async function getArticleDetail(id: string) {
@@ -37,15 +48,21 @@ export async function getArticleDetail(id: string) {
 
   const { data, error } = await supabase
     .from("articles")
-    .select("*, profiles:creator_id(role)")
+    .select("*")
     .eq("id", id)
     .eq("status", "PUBLISHED")
     .single();
 
-  if (error) {
+  if (error || !data) {
     console.error("Error fetching article detail:", error);
     return null;
   }
 
-  return data;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.creator_id)
+    .single();
+
+  return { ...data, profiles: profile || { role: "USER" } };
 }

@@ -26,7 +26,7 @@ export default async function AdminUploadResourcePage() {
 
         <SectionHeading
           title="Upload Resource (Admin)"
-          subtitle="Unggah panduan, template, atau contoh berkas resmi. Resource Anda akan ditandai dengan label Official."
+          subtitle="Unggah panduan, template, atau contoh berkas resmi." // Resource Anda akan ditandai dengan label Official.
         />
 
         <GlassCard className="mt-8 p-6">

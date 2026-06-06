@@ -26,7 +26,7 @@ export default async function AdminCreateEventPage() {
 
         <SectionHeading
           title="Buat Event (Admin)"
-          subtitle="Publikasikan event resmi ke komunitas. Event Anda akan ditandai dengan label Official."
+          subtitle="Publikasikan event resmi ke komunitas." // Event Anda akan ditandai dengan label Official."
         />
 
         <GlassCard className="mt-8 p-6">
