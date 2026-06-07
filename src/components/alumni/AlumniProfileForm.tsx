@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 import AlumniAlert from "@/components/ui/AlumniAlert";
 import GlassCard from "@/components/ui/GlassCard";
 import CTAButton from "@/components/ui/CTAButton";
+import { saveProfileAction, saveExperiencesAction, uploadFileToStorage } from "@/app/(alumni)/alumni/actions";
 
 type ExperienceItem = {
   id?: string;
@@ -154,7 +154,6 @@ export default function AlumniProfileForm({
   experiences: initialExperiences,
   isVerified = false,
 }: AlumniProfileFormProps) {
-  const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profile, setProfile] = useState(initialProfile);
@@ -195,7 +194,6 @@ export default function AlumniProfileForm({
     const checklist = [
       Boolean(profile.avatar_url || avatarFile),
       Boolean(profile.full_name),
-      Boolean(profile.short_bio),
       Boolean(profile.current_position || profile.current_company),
       Boolean(profile.linkedin_url || profile.website_url || profile.instagram_url),
       experiences.some((item) => item.title.trim().length > 0),
@@ -237,14 +235,8 @@ export default function AlumniProfileForm({
   }
 
   async function handleSave() {
-    // VALIDASI DASAR
-    if (!profile.full_name || !profile.nickname) {
-      setAlert({
-        isOpen: true,
-        type: 'error',
-        title: 'Belum Lengkap!',
-        message: 'Harap isi setidaknya Nama Lengkap dan Nama Panggilan kamu.'
-      });
+    if (!profile.full_name) {
+      setAlert({ isOpen: true, type: 'error', title: 'Belum Lengkap!', message: 'Harap isi Nama Lengkap kamu.' });
       return;
     }
 
@@ -254,61 +246,41 @@ export default function AlumniProfileForm({
       let finalAvatarUrl = profile.avatar_url;
 
       if (avatarFile) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(avatarFile);
+        });
         const fileExt = avatarFile.name.split('.').pop();
         const fileName = `${userId}-${Math.random()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatarFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-        
-        finalAvatarUrl = publicUrl;
+        const { url, error } = await uploadFileToStorage('avatars', fileName, base64, avatarFile.type);
+        if (error) throw new Error(`Gagal upload avatar: ${error}`);
+        finalAvatarUrl = url || "";
       }
 
-      const payload = {
-        user_id: userId,
+      const profilePayload = {
         full_name: profile.full_name,
-        nickname: profile.nickname || null,
         email: profile.email || null,
         avatar_url: finalAvatarUrl || null,
-        gender: profile.gender ? profile.gender.toLowerCase() : null,
-        study_status: profile.study_status ? profile.study_status.toLowerCase() : null,
         degree_level: profile.degree_level || null,
-        intake_year: profile.intake_year ? Number(profile.intake_year) : null,
         graduation_year: profile.graduation_year ? Number(profile.graduation_year) : null,
         program: profile.program || null,
         institution: profile.institution || null,
         city: profile.city || null,
         current_position: profile.current_position || null,
         current_company: profile.current_company || null,
-        field_of_work: profile.field_of_work || null,
-        short_bio: profile.short_bio || null,
         linkedin_url: profile.linkedin_url || null,
         instagram_url: profile.instagram_url || null,
         website_url: profile.website_url || null,
-        updated_at: new Date().toISOString(),
       };
 
-      const { error: profileError } = await supabase
-        .from("alumni_profiles")
-        .upsert(payload, { onConflict: "user_id" });
-
-      if (profileError) throw profileError;
+      const profileRes = await saveProfileAction(profilePayload);
+      if (profileRes.error) throw new Error(profileRes.error);
 
       const cleanExperiences = experiences
-        .filter(
-          (item) =>
-            item.title.trim() ||
-            item.organization.trim() ||
-            item.role_name.trim() ||
-            item.description.trim()
-        )
+        .filter((item) => item.title.trim() || item.organization.trim() || item.role_name.trim() || item.description.trim())
         .map((item) => ({
-          user_id: userId,
           type: item.type,
           title: item.title || "Tanpa judul",
           organization: item.organization || null,
@@ -319,20 +291,8 @@ export default function AlumniProfileForm({
           description: item.description || null,
         }));
 
-      const { error: deleteError } = await supabase
-        .from("alumni_experiences")
-        .delete()
-        .eq("user_id", userId);
-
-      if (deleteError) throw deleteError;
-
-      if (cleanExperiences.length > 0) {
-        const { error: expError } = await supabase
-          .from("alumni_experiences")
-          .insert(cleanExperiences);
-
-        if (expError) throw expError;
-      }
+      const expRes = await saveExperiencesAction(cleanExperiences);
+      if (expRes.error) throw new Error(expRes.error);
 
       setAlert({
         isOpen: true,
@@ -416,16 +376,11 @@ export default function AlumniProfileForm({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Input
                 label="Nama Lengkap"
                 value={profile.full_name}
                 onChange={(v) => setProfile((prev) => ({ ...prev, full_name: v }))}
-              />
-              <Input
-                label="Nama Panggilan"
-                value={profile.nickname}
-                onChange={(v) => setProfile((prev) => ({ ...prev, nickname: v }))}
               />
               <Input
                 label="Email"
@@ -454,42 +409,11 @@ export default function AlumniProfileForm({
           )}
           <SectionTitle title="Informasi Umum" />
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Input
-              label="Tahun Masuk"
-              value={profile.intake_year}
-              onChange={(v) => setProfile((prev) => ({ ...prev, intake_year: v }))}
-              type="number"
-            />
-            <Input
-              label="Tahun Lulus"
-              value={profile.graduation_year}
-              onChange={(v) => setProfile((prev) => ({ ...prev, graduation_year: v }))}
-              type="number"
-            />
             <Select
               label="Jenjang"
               value={profile.degree_level}
               onChange={(v) => setProfile((prev) => ({ ...prev, degree_level: v }))}
               options={DEGREE_LEVEL_OPTIONS}
-            />
-            <Select
-              label="Jenis Kelamin"
-              value={profile.gender}
-              onChange={(v) => setProfile((prev) => ({ ...prev, gender: v }))}
-              options={[
-                { label: "Laki-laki", value: "male" },
-                { label: "Perempuan", value: "female" },
-              ]}
-            />
-            <Select
-              label="Status Studi"
-              value={profile.study_status}
-              onChange={(v) => setProfile((prev) => ({ ...prev, study_status: v }))}
-              options={[
-                { label: "Aktif", value: "active" },
-                { label: "Lulus", value: "graduated" },
-                { label: "Cuti", value: "on_leave" },
-              ]}
             />
             <Input
               label="Program"
@@ -502,6 +426,12 @@ export default function AlumniProfileForm({
               onChange={(v) => setProfile((prev) => ({ ...prev, institution: v }))}
             />
             <Input
+              label="Tahun Lulus"
+              value={profile.graduation_year}
+              onChange={(v) => setProfile((prev) => ({ ...prev, graduation_year: v }))}
+              type="number"
+            />
+            <Input
               label="Posisi Saat Ini"
               value={profile.current_position}
               onChange={(v) => setProfile((prev) => ({ ...prev, current_position: v }))}
@@ -510,20 +440,6 @@ export default function AlumniProfileForm({
               label="Perusahaan / Instansi"
               value={profile.current_company}
               onChange={(v) => setProfile((prev) => ({ ...prev, current_company: v }))}
-            />
-            <Input
-              label="Bidang Pekerjaan"
-              value={profile.field_of_work}
-              onChange={(v) => setProfile((prev) => ({ ...prev, field_of_work: v }))}
-            />
-          </div>
-
-          <div className="mt-4">
-            <Textarea
-              label="Bio Singkat"
-              value={profile.short_bio}
-              onChange={(v) => setProfile((prev) => ({ ...prev, short_bio: v }))}
-              placeholder="Ceritakan singkat perjalanan akademik atau profesionalmu."
             />
           </div>
         </GlassCard>

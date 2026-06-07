@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import AdminDashboardClient from "./AdminDashboardClient";
 import CTAButton from "@/components/ui/CTAButton";
 import ContentHistoryList from "@/components/shared/ContentHistoryList";
@@ -46,7 +48,7 @@ export default async function AdminDashboardPage() {
 
           <AdminDashboardClient stats={stats} data={data} />
           {user && (
-            <ContentHistoryList userId={user.id} title="Riwayat Konten Admin" />
+          <ContentHistoryList userId={user.id} title="Riwayat Konten Admin" isAdmin={true} />
           )}
         </div>
       </section>

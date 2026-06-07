@@ -138,6 +138,7 @@ export async function deleteArticle(id: string) {
   const { error } = await supabase.from("articles").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
+  revalidatePath("/alumni");
 }
 
 export async function deleteEvent(id: string) {
@@ -145,6 +146,7 @@ export async function deleteEvent(id: string) {
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
+  revalidatePath("/alumni");
 }
 
 export async function deleteResource(id: string) {
@@ -152,4 +154,5 @@ export async function deleteResource(id: string) {
   const { error } = await supabase.from("resources").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
+  revalidatePath("/alumni");
 }

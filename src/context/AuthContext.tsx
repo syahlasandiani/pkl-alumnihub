@@ -135,8 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await supabase.auth.signOut();
 
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   const value = useMemo<AuthContextValue>(

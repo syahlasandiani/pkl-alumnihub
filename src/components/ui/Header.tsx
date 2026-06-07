@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import GlassConfirmDialog from "@/components/ui/GlassConfirmDialog";
 
-type NavKey = "beranda" | "jadwal" | "alumni" | "learning-hub" | "faq" | "profile";
+type NavKey = "beranda" | "jadwal" | "alumni" | "learning-hub" | "faq";
 
 type NavLink = {
   key: NavKey;
@@ -34,8 +34,6 @@ export default function Header() {
     pathname === "/alumni-directory";
   const isLearningHubPage = pathname.startsWith("/learning-hub");
   const isFaqPage = pathname.startsWith("/faq");
-  const isProfilePage =
-    pathname.startsWith("/alumni") || pathname.startsWith("/verify-alumni");
 
   const isAdmin = user?.role === "ADMIN";
   const isVerifiedAlumni = user?.verification_status === "VERIFIED";
@@ -49,9 +47,6 @@ export default function Header() {
       { key: "alumni", name: "Alumni", section: "alumni" },
       { key: "learning-hub", name: "Learning Hub", section: "learning-hub" },
       { key: "faq", name: "FAQ", section: "faq" },
-      ...(isAuthenticated && !isAdmin
-        ? [{ key: "profile" as NavKey, name: "Profile", section: "profile" as NavKey }]
-        : []),
     ],
     [isAuthenticated, isAdmin]
   );
@@ -98,19 +93,17 @@ export default function Header() {
     if (section === "alumni") return "/alumni-directory";
     if (section === "learning-hub") return "/learning-hub";
     if (section === "faq") return "/faq";
-    if (section === "profile") return "/alumni";
 
     return `/#${section}`;
   };
 
   const isActive = (link: NavLink) => {
-    if (isProfilePage) return link.key === "profile";
     if (isAlumniPage) return link.key === "alumni";
     if (isLearningHubPage) return link.key === "learning-hub";
     if (isFaqPage) return link.key === "faq";
     if (isHome) return activeSection === link.section;
 
-    return link.key === "beranda";
+    return false;
   };
 
   const accountHref = (() => {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AlumniInput, AlumniTextarea } from "@/components/alumni/AlumniField";
 import AlumniAlert from "@/components/ui/AlumniAlert";
+import { createEventAction, uploadFileToStorage } from "@/app/(alumni)/alumni/actions";
 
 interface CreateEventClientProps {
   userId: string;
@@ -88,27 +89,23 @@ export default function CreateEventClient({ userId, isAdmin }: CreateEventClient
     setBannerFile(file);
   }
 
-  async function uploadBanner() {
+  async function uploadBanner(): Promise<string | null> {
     if (!bannerFile) return null;
 
+    // Convert file ke base64 untuk dikirim ke server action
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(bannerFile);
+    });
+
     const fileExt = bannerFile.name.split(".").pop();
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `banners/${fileName}`;
+    const filePath = `banners/${userId}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("events")
-      .upload(filePath, bannerFile, {
-        contentType: bannerFile.type,
-        upsert: false,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("events").getPublicUrl(filePath);
-
-    return publicUrl;
+    const { url, error } = await uploadFileToStorage("events", filePath, base64, bannerFile.type);
+    if (error) throw new Error(`Gagal upload banner: ${error}`);
+    return url;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -142,8 +139,8 @@ export default function CreateEventClient({ userId, isAdmin }: CreateEventClient
     try {
       const imageUrl = await uploadBanner();
 
-      const { error: insertError } = await supabase.from("events").insert({
-        creator_id: userId,
+      // Gunakan Server Action untuk bypass RLS client
+      const result = await createEventAction({
         title: form.title.trim(),
         type: form.type,
         event_date: form.event_date,
@@ -152,10 +149,9 @@ export default function CreateEventClient({ userId, isAdmin }: CreateEventClient
         location: form.type === "offline" ? form.location.trim() || null : null,
         link: form.type === "online" ? form.link.trim() || null : null,
         image_url: imageUrl,
-        status: "PUBLISHED",
       });
 
-      if (insertError) throw insertError;
+      if (result.error) throw new Error(result.error);
 
       showAlert(
         "success",
@@ -163,11 +159,16 @@ export default function CreateEventClient({ userId, isAdmin }: CreateEventClient
         "Event kamu telah berhasil dibuat dan sudah muncul di agenda komunitas."
       );
     } catch (error: any) {
-      console.error(error);
+      console.error('[CreateEvent] Full error:', error);
+      const detail = [
+        error?.message,
+        error?.code ? `(code: ${error.code})` : '',
+        error?.hint ? `Hint: ${error.hint}` : '',
+      ].filter(Boolean).join(' ');
       showAlert(
         "error",
-        "Oops!",
-        error?.message || "Gagal membuat event. Silakan coba lagi."
+        "Gagal Buat Event!",
+        detail || "Gagal membuat event. Coba lagi atau hubungi admin."
       );
     } finally {
       setLoading(false);

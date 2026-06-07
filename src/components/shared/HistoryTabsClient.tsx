@@ -11,9 +11,10 @@ interface HistoryTabsClientProps {
   articles: any[];
   events: any[];
   resources: any[];
+  isAdmin?: boolean;
 }
 
-export default function HistoryTabsClient({ articles, events, resources }: HistoryTabsClientProps) {
+export default function HistoryTabsClient({ articles, events, resources, isAdmin = false }: HistoryTabsClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>("events");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
@@ -23,6 +24,11 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
     { id: "resources", label: "Resource", icon: Paperclip, count: resources.length },
   ];
 
+  const getEditHref = (type: "event" | "post" | "resource", id: string) => {
+    if (isAdmin) return `/admin/edit-${type}/${id}`;
+    return `/alumni/edit-${type}/${id}`;
+  };
+
   const handleDelete = async (id: string, type: TabType) => {
     if (!confirm("Apakah Anda yakin ingin menghapus item ini?")) return;
     setIsDeleting(id);
@@ -30,6 +36,7 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
       if (type === "articles") await deleteArticle(id);
       if (type === "events") await deleteEvent(id);
       if (type === "resources") await deleteResource(id);
+      window.location.reload();
     } catch (error: any) {
       alert("Gagal menghapus: " + error.message);
     } finally {
@@ -88,7 +95,7 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/admin/edit-event/${event.id}`}
+                      href={getEditHref("event", event.id)}
                       className="p-2 text-white/60 hover:text-[#7dd3d3] hover:bg-white/10 rounded-lg transition-colors"
                       title="Edit Event"
                     >
@@ -131,7 +138,7 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/admin/edit-post/${article.id}`}
+                      href={getEditHref("post", article.id)}
                       className="p-2 text-white/60 hover:text-[#7dd3d3] hover:bg-white/10 rounded-lg transition-colors"
                       title="Edit Konten"
                     >
@@ -185,7 +192,7 @@ export default function HistoryTabsClient({ articles, events, resources }: Histo
                       </a>
                     )}
                     <Link
-                      href={`/admin/edit-resource/${resource.id}`}
+                      href={getEditHref("resource", resource.id)}
                       className="p-2 text-white/60 hover:text-[#7dd3d3] hover:bg-white/10 rounded-lg transition-colors"
                       title="Edit Resource"
                     >

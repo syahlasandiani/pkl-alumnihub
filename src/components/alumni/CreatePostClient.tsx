@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AlumniInput, AlumniTextarea } from "@/components/alumni/AlumniField";
 import AlumniAlert from "@/components/ui/AlumniAlert";
+import { createArticleAction } from "@/app/(alumni)/alumni/actions";
 
 interface CreatePostClientProps {
   userId: string;
@@ -128,17 +129,15 @@ export default function CreatePostClient({
     try {
       const coverUrl = await uploadCover();
 
-      const { error: insertError } = await supabase.from("articles").insert({
-        creator_id: userId,
-        author_name: authorName,
+      // Gunakan Server Action untuk bypass RLS client
+      const result = await createArticleAction({
         title: title.trim(),
         content: content.trim(),
         cover_url: coverUrl,
-        published_at: new Date().toISOString(),
-        status: "PUBLISHED",
+        author_name: authorName,
       });
 
-      if (insertError) throw insertError;
+      if (result.error) throw new Error(result.error);
 
       showAlert(
         "success",
@@ -146,11 +145,16 @@ export default function CreatePostClient({
         "Konten kamu telah berhasil dipublikasikan."
       );
     } catch (error: any) {
-      console.error(error);
+      console.error('[CreatePost] Full error:', error);
+      const detail = [
+        error?.message,
+        error?.code ? `(code: ${error.code})` : '',
+        error?.hint ? `Hint: ${error.hint}` : '',
+      ].filter(Boolean).join(' ');
       showAlert(
         "error",
-        "Oops!",
-        error?.message || "Gagal mempublikasikan konten. Silakan coba lagi."
+        "Gagal Publish!",
+        detail || "Gagal mempublikasikan konten. Coba lagi atau hubungi admin."
       );
     } finally {
       setIsSubmitting(false);

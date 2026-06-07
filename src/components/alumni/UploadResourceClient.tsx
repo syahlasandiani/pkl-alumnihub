@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AlumniInput, AlumniTextarea } from "@/components/alumni/AlumniField";
 import AlumniAlert from "@/components/ui/AlumniAlert";
 import { CheckCircle2, FileText, Upload, X } from "lucide-react";
+import { createResourceAction } from "@/app/(alumni)/alumni/actions";
 
 interface UploadResourceClientProps {
   userId: string;
@@ -174,8 +175,8 @@ export default function UploadResourceClient({
         data: { publicUrl },
       } = supabase.storage.from("resources").getPublicUrl(filePath);
 
-      const { error: insertError } = await supabase.from("resources").insert({
-        creator_id: userId,
+      // Gunakan Server Action untuk bypass RLS client
+      const result = await createResourceAction({
         title: form.title.trim(),
         description: form.description.trim() || null,
         file_url: publicUrl,
@@ -183,10 +184,9 @@ export default function UploadResourceClient({
         file_size: file.size,
         visibility: form.visibility,
         category: form.category,
-        status: "PUBLISHED",
       });
 
-      if (insertError) throw insertError;
+      if (result.error) throw new Error(result.error);
 
       showAlert(
         "success",
@@ -194,11 +194,16 @@ export default function UploadResourceClient({
         "Resource kamu telah berhasil diupload dan sekarang bisa diakses melalui Learning Hub."
       );
     } catch (error: any) {
-      console.error(error);
+      console.error('[UploadResource] Full error:', error);
+      const detail = [
+        error?.message,
+        error?.code ? `(code: ${error.code})` : '',
+        error?.hint ? `Hint: ${error.hint}` : '',
+      ].filter(Boolean).join(' ');
       showAlert(
         "error",
-        "Oops!",
-        error?.message || "Gagal mengupload resource. Silakan coba lagi."
+        "Gagal Upload!",
+        detail || "Gagal mengupload resource. Coba lagi atau hubungi admin."
       );
     } finally {
       setLoading(false);

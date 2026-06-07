@@ -184,8 +184,7 @@ function LoginForm() {
         ctaLabel="Oke"
         onClose={() => {
           setSuccessOpen(false);
-          router.push(next);
-          router.refresh(); // ✅ biar server state ikut kebaca
+          window.location.href = next;
         }}
       />
 

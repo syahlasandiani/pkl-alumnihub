@@ -5,9 +5,10 @@ import GlassCard from "@/components/ui/GlassCard";
 interface ContentHistoryListProps {
   userId: string;
   title?: string;
+  isAdmin?: boolean;
 }
 
-export default async function ContentHistoryList({ userId, title = "Riwayat Konten Saya" }: ContentHistoryListProps) {
+export default async function ContentHistoryList({ userId, title = "Riwayat Konten Saya", isAdmin = false }: ContentHistoryListProps) {
   const supabase = await createServerClient();
 
   const [
@@ -27,6 +28,7 @@ export default async function ContentHistoryList({ userId, title = "Riwayat Kont
         articles={articles || []} 
         events={events || []} 
         resources={resources || []} 
+        isAdmin={isAdmin}
       />
     </GlassCard>
   );

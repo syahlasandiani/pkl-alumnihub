@@ -49,11 +49,23 @@ export default async function AlumniDetailPage({ params }: { params: Promise<{ i
                 {alumni.full_name}
               </h1>
               <p className="mt-1 text-sm text-white/70">
-                {alumni.institution || "Universitas Alumni"} • Alumni BU {alumni.intake_year || ""}
+                {alumni.institution || "Universitas"} {alumni.degree_level ? `• ${alumni.degree_level}` : ""}
               </p>
+              <div className="mt-4 flex gap-4">
+                {alumni.linkedin_url && (
+                  <a href={alumni.linkedin_url} target="_blank" rel="noreferrer" className="text-xs text-[#7dd3d3] hover:underline">LinkedIn</a>
+                )}
+                {alumni.instagram_url && (
+                  <a href={alumni.instagram_url} target="_blank" rel="noreferrer" className="text-xs text-[#7dd3d3] hover:underline">Instagram</a>
+                )}
+                {alumni.website_url && (
+                  <a href={alumni.website_url} target="_blank" rel="noreferrer" className="text-xs text-[#7dd3d3] hover:underline">Website</a>
+                )}
+              </div>
             </div>
             <div className="md:text-right">
-              <p className="text-xs font-medium text-white/50">{alumni.email}</p>
+              <p className="text-xs font-medium text-white/50">{alumni.email || "-"}</p>
+              <p className="text-xs font-medium text-white/50 mt-1">{alumni.city || "Kota Tidak Diketahui"}</p>
             </div>
           </div>
         </div>
@@ -62,68 +74,72 @@ export default async function AlumniDetailPage({ params }: { params: Promise<{ i
           {/* Informasi Umum */}
           <section className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
             <div className="mb-6 flex items-center gap-4">
-              <h2 className="text-sm font-bold text-white">Informasi Umum</h2>
+              <h2 className="text-sm font-bold text-white">Informasi Pendidikan</h2>
               <div className="h-px flex-1 bg-white/10" />
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailBox label="Tahun Masuk" value={alumni.intake_year} />
-              <DetailBox label="Tahun Lulus" value={alumni.graduation_year} />
-              <DetailBox label="Jenis Kelamin" value={alumni.gender === 'male' ? 'Laki-laki' : alumni.gender === 'female' ? 'Perempuan' : '-'} />
-              <DetailBox label="Status" value={alumni.study_status === 'graduated' ? 'Lulus' : alumni.study_status === 'active' ? 'Aktif' : '-'} />
-              <DetailBox label="Provinsi" value={alumni.city || "-"} />
-              <DetailBox label="Kota/Kabupaten" value={alumni.city || "-"} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <DetailBox label="Jenjang" value={alumni.degree_level || "-"} />
+              <DetailBox label="Institusi / Kampus" value={alumni.institution || "-"} />
+              <DetailBox label="Program Studi" value={alumni.program || "-"} />
+              <DetailBox label="Tahun Lulus" value={alumni.graduation_year || "-"} />
             </div>
           </section>
 
           {/* Pekerjaan */}
           <section className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
             <div className="mb-6 flex items-center gap-4">
-              <h2 className="text-sm font-bold text-white">Pekerjaan</h2>
+              <h2 className="text-sm font-bold text-white">Pekerjaan Saat Ini</h2>
               <div className="h-px flex-1 bg-white/10" />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailBox label="Perusahaan" value={alumni.current_company || "-"} />
+              <DetailBox label="Perusahaan / Instansi" value={alumni.current_company || "-"} />
               <DetailBox label="Posisi" value={alumni.current_position || "-"} />
-              <DetailBox label="Tahun Mulai" value={workExperiences[0]?.start_year || "-"} />
-              <DetailBox label="Tahun Selesai" value={workExperiences[0]?.end_year || "-"} />
             </div>
           </section>
 
           {/* Pengalaman */}
-          <section className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
-            <div className="mb-6 flex items-center gap-4">
-              <h2 className="text-sm font-bold text-white">Pengalaman</h2>
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailBox 
-                label="Pengalaman" 
-                value={achievements.length > 0 ? achievements[0].title : "Project / organisasi / volunteer singkat."} 
-              />
-              <DetailBox 
-                label="Tahun" 
-                value={achievements.length > 0 ? achievements[0].achievement_year : "2023"} 
-              />
-            </div>
-          </section>
+          {workExperiences.length > 0 && (
+            <section className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
+              <div className="mb-6 flex items-center gap-4">
+                <h2 className="text-sm font-bold text-white">Riwayat Pengalaman</h2>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+              <div className="space-y-4">
+                {workExperiences.map((exp: any, i: number) => (
+                  <div key={i} className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                      <h3 className="font-semibold text-white">{exp.title}</h3>
+                      <p className="text-xs text-[#7dd3d3] mt-1 sm:mt-0">{exp.start_year || "-"} s/d {exp.end_year || "Sekarang"}</p>
+                    </div>
+                    <p className="text-sm text-white/70 mb-2">{exp.organization || "-"} {exp.role_name ? `• ${exp.role_name}` : ""}</p>
+                    {exp.description && <p className="text-xs text-white/50">{exp.description}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Prestasi */}
-          <section className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
-            <div className="mb-6 flex items-center gap-4">
-              <h2 className="text-sm font-bold text-white">Prestasi</h2>
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailBox 
-                label="Prestasi" 
-                value={achievements.length > 1 ? achievements[1].title : "-"} 
-              />
-              <DetailBox 
-                label="Tahun" 
-                value={achievements.length > 1 ? achievements[1].achievement_year : "-"} 
-              />
-            </div>
-          </section>
+          {achievements.length > 0 && (
+            <section className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
+              <div className="mb-6 flex items-center gap-4">
+                <h2 className="text-sm font-bold text-white">Riwayat Prestasi</h2>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+              <div className="space-y-4">
+                {achievements.map((exp: any, i: number) => (
+                  <div key={i} className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                      <h3 className="font-semibold text-white">{exp.title}</h3>
+                      <p className="text-xs text-[#7dd3d3] mt-1 sm:mt-0">Tahun {exp.achievement_year || "-"}</p>
+                    </div>
+                    <p className="text-sm text-white/70 mb-2">{exp.organization || "-"} {exp.role_name ? `• ${exp.role_name}` : ""}</p>
+                    {exp.description && <p className="text-xs text-white/50">{exp.description}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </main>
@@ -134,7 +150,7 @@ function DetailBox({ label, value }: { label: string; value: any }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
       <p className="mb-1 text-[10px] font-medium text-white/40">{label}</p>
-      <p className="text-sm font-semibold text-white">{value || "-"}</p>
+      <div className="text-sm font-semibold text-white">{value || "-"}</div>
     </div>
   );
 }

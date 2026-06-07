@@ -90,6 +90,9 @@ export default async function middleware(req: NextRequest) {
    "/alumni/upload-resource",
    "/alumni/create-post",
    "/alumni/profile",
+   "/alumni/edit-post",
+   "/alumni/edit-event",
+   "/alumni/edit-resource",
   ];
 
   const isPrivilegedAlumniRoute = alumniPrivilegedRoutes.some(

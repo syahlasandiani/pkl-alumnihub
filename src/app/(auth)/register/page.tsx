@@ -10,8 +10,6 @@ import GlassDialog from "@/components/ui/GlassDialog";
 import CTAButton from "@/components/ui/CTAButton";
 import { createClient } from "@/lib/supabase/client";
 
-const supabase = createClient();
-
 const inputClass =
   "w-full h-12 rounded-2xl border border-white/15 bg-white/5 backdrop-blur-md px-4 text-white placeholder:text-white/40 outline-none focus:border-white/30";
 
